@@ -69,7 +69,7 @@ namespace ApplyUpdate
 
             if (!File.Exists(zipPath))
             {
-                string packageURL = CombineURLFromString(repoURL, stamp, "latest");
+                string packageURL = CombineURLFromString(repoURL, "squirrel", stamp, "latest");
                 using (Http httpClient = new Http(true))
                 {
                     Console.Write($"Initializing package download... ");
@@ -91,7 +91,14 @@ namespace ApplyUpdate
             MoveExtractedPackage(zipExtractPath, workingDir);
 
             // Remove temp folder
-            Directory.Delete(tempDir, true);
+            try
+            {
+                Directory.Delete(tempDir, true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed while deleting temporary folder: tempDir. Skipping!\r\n{ex}");
+            }
 
             // Launch Collapse
             int count = 5;
@@ -129,7 +136,28 @@ namespace ApplyUpdate
                     Directory.CreateDirectory(destDir);
                 }
 
-                File.Move(sourceFile, destPath, true);
+                try
+                {
+                    Console.Write($"Moving: {baseName}... ");
+                    File.Move(sourceFile, destPath, true);
+                    Console.WriteLine($"Done!");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed! Copying it instead!\r\n{ex}");
+                    try
+                    {
+                        Console.Write($"Copying: {baseName}... ");
+                        File.Copy(sourceFile, destPath, true);
+                        Console.WriteLine($"Done!");
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"still Failed!\r\n{ex}");
+                        throw;
+                    }
+                    return;
+                }
             }
         }
 
