@@ -47,6 +47,14 @@ namespace ApplyUpdate
             int count = 5;
             Process proc;
 
+            int cw = 1;
+            while (IsCollapseRunning())
+            {
+                Console.WriteLine($"Waiting for Collapse Launcher to close... (Attempt: {cw})");
+                Thread.Sleep(1000);
+                cw++;
+            }
+
             if (args.Length > 0 && args[0] == "reapply")
             {
                 // Remove old folders
@@ -158,6 +166,8 @@ namespace ApplyUpdate
             };
             proc.Start();
         }
+
+        private static bool IsCollapseRunning() => Process.GetProcessesByName("CollapseLauncher").Length != 0;
 
         private static void MoveExtractedPackage(string source, string destination)
         {
