@@ -42,9 +42,68 @@ namespace ApplyUpdate
 
         static void Main(string[] args)
         {
-            Console.Write("Getting Collapse release channel information... ");
             string zipPath = Path.Combine(tempDir, "latest");
             string zipExtractPath = Path.Combine(tempDir, "_Extract");
+            int count = 5;
+            Process proc;
+
+            if (args.Length > 0 && args[0] == "reapply")
+            {
+                // Remove old folders
+                try
+                {
+                    foreach (string oldPath in Directory.EnumerateDirectories(workingDir, "app-*"))
+                    {
+                        Directory.Delete(oldPath, true);
+                    }
+
+                    string pkgPath = Path.Combine(workingDir, "packages");
+                    if (Directory.Exists(pkgPath))
+                    {
+                        Directory.Delete(pkgPath, true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed while removing old folder!\r\n{ex}");
+                }
+
+                // Move the file
+                MoveExtractedPackage(zipExtractPath, workingDir);
+
+                // Remove temp folder
+                try
+                {
+                    Directory.Delete(tempDir, true);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed while deleting temporary folder: tempDir. Skipping!\r\n{ex}");
+                }
+
+                // Launch Collapse
+                while (count > 0)
+                {
+                    Console.Write($"\rLaunching Collapse in {count}... ");
+                    Thread.Sleep(1000);
+                    count--;
+                }
+                proc = new Process()
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        UseShellExecute = true,
+                        FileName = launcherPath
+                    }
+                };
+
+                // Start Collapse
+                proc.Start();
+
+                return;
+            }
+
+            Console.Write("Getting Collapse release channel information... ");
 
             if (Directory.Exists(zipExtractPath))
             {
@@ -87,37 +146,16 @@ namespace ApplyUpdate
             // Extract the file
             ExtractPackage(zipPath, zipExtractPath);
 
-            // Move the file
-            MoveExtractedPackage(zipExtractPath, workingDir);
-
-            // Remove temp folder
-            try
-            {
-                Directory.Delete(tempDir, true);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed while deleting temporary folder: tempDir. Skipping!\r\n{ex}");
-            }
-
-            // Launch Collapse
-            int count = 5;
-            while (count > 0)
-            {
-                Console.Write($"\rLaunching Collapse in {count}... ");
-                Thread.Sleep(1000);
-                count--;
-            }
-            Process proc = new Process()
+            // Restart ApplyUpdate to apply the update
+            proc = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
                     UseShellExecute = true,
-                    FileName = launcherPath
+                    FileName = applyExecPath,
+                    Arguments = "reapply"
                 }
             };
-
-            // Start Collapse
             proc.Start();
         }
 
