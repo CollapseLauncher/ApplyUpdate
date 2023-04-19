@@ -1,25 +1,26 @@
-﻿using System;
-using System.IO;
+﻿using Hi3Helper.Http;
+using System;
 using System.Diagnostics;
-using System.Linq;
-using System.IO.Compression;
 using System.Formats.Tar;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
-using Hi3Helper.Http;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ApplyUpdate
 {
     internal class Program
     {
         public const string repoURL = "https://github.com/neon-nyan/CollapseLauncher-ReleaseRepo/raw/main";
-        public static string execPath = Process.GetCurrentProcess().MainModule.FileName;
-        public static string workingDir = Path.GetDirectoryName(execPath);
+
+        public static string realExecPath = Process.GetCurrentProcess().MainModule.FileName;
+        public static string realExecDir { get => Path.GetDirectoryName(realExecPath); }
+        public static string workingDir { get => realExecDir; }
+        public static string execPath = Path.Combine(workingDir, applyExec + ".exe");
         public static string tempDir = Path.Combine(workingDir, "_Temp");
         public static string sourcePath = Path.Combine(workingDir, Path.GetFileName(execPath));
         public const string applyExec = "ApplyUpdate";
-        public static string applyExecPath = Path.Combine(workingDir, applyExec + ".exe");
         public static string launcherPath = Path.Combine(workingDir, "CollapseLauncher.exe");
         public static readonly string[] excludeDeleteFile = new string[]
         {
@@ -42,10 +43,18 @@ namespace ApplyUpdate
 
         static void Main(string[] args)
         {
+            Process proc;
+            if (Directory.GetCurrentDirectory().Trim('\\') != realExecDir.Trim('\\'))
+            {
+                Console.WriteLine($"Moving to the right working directory ({realExecDir})...");
+                Directory.SetCurrentDirectory(realExecDir);
+            }
+
             string zipPath = Path.Combine(tempDir, "latest");
             string zipExtractPath = Path.Combine(tempDir, "_Extract");
             int count = 5;
-            Process proc;
+
+            Console.WriteLine($"Current working directory: {workingDir}");
 
             int cw = 1;
             while (IsCollapseRunning())
@@ -57,23 +66,30 @@ namespace ApplyUpdate
 
             if (args.Length > 0 && args[0] == "reapply")
             {
-                // Remove old folders
-                try
+                while (true)
                 {
-                    foreach (string oldPath in Directory.EnumerateDirectories(workingDir, "app-*"))
+                    // Remove old folders
+                    try
                     {
-                        Directory.Delete(oldPath, true);
-                    }
+                        foreach (string oldPath in Directory.EnumerateDirectories(workingDir, "app-*", SearchOption.TopDirectoryOnly))
+                        {
+                            Directory.Delete(oldPath, true);
+                        }
 
-                    string pkgPath = Path.Combine(workingDir, "packages");
-                    if (Directory.Exists(pkgPath))
-                    {
-                        Directory.Delete(pkgPath, true);
+                        string pkgPath = Path.Combine(workingDir, "packages");
+                        if (Directory.Exists(pkgPath))
+                        {
+                            Directory.Delete(pkgPath, true);
+                        }
+
+                        break;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed while removing old folder!\r\n{ex}");
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed while removing old folder!\r\n{ex}");
+                        Console.WriteLine("Retrying...");
+                        Thread.Sleep(1000);
+                    }
                 }
 
                 // Move the file
@@ -90,6 +106,7 @@ namespace ApplyUpdate
                 }
 
                 // Launch Collapse
+                Console.WriteLine($"Calling Launcher: {launcherPath}...");
                 while (count > 0)
                 {
                     Console.Write($"\rLaunching Collapse in {count}... ");
@@ -160,7 +177,7 @@ namespace ApplyUpdate
                 StartInfo = new ProcessStartInfo
                 {
                     UseShellExecute = true,
-                    FileName = applyExecPath,
+                    FileName = realExecPath,
                     Arguments = "reapply"
                 }
             };
@@ -284,7 +301,7 @@ namespace ApplyUpdate
                     Console.WriteLine("Done!");
                 }
                 catch (Exception ex) { Console.WriteLine($"Error!\r\n{ex}"); }
-            } 
+            }
         }
 
         private static bool IsExceptedFiles(string path) => excludeDeleteFile.Any(x => path.Contains(x));
