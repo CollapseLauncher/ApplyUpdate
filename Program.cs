@@ -54,7 +54,7 @@ namespace ApplyUpdate
             string zipExtractPath = Path.Combine(tempDir, "_Extract");
             int count = 5;
 
-            Console.WriteLine($"Current working directory: {workingDir}");
+            Console.WriteLine($"Current working directory: {Directory.GetCurrentDirectory()}");
 
             int cw = 1;
             while (IsCollapseRunning())
