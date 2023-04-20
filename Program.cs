@@ -41,8 +41,62 @@ namespace ApplyUpdate
 #endif
         };
 
-        static void Main(string[] args)
+        private static int CompressMode(params string[] args)
         {
+            if (args.Length != 3)
+            {
+                Console.WriteLine("Please define Input and Output file path");
+                return 1;
+            }
+
+            if (!File.Exists(args[1]))
+            {
+                Console.WriteLine("Input file doesn't exist!");
+                Console.WriteLine("Path: " + args[1]);
+                return 2;
+            }
+
+            if (!Directory.Exists(Path.GetDirectoryName(args[2])))
+            {
+                Console.WriteLine("Output directory from given path doesn't exist!");
+                Console.WriteLine("Path: " + args[2]);
+                return 2;
+            }
+
+            using (FileStream fsi = new FileStream(args[1], FileMode.Open, FileAccess.Read))
+            using (FileStream fso = new FileStream(args[2], FileMode.Create, FileAccess.Write))
+            using (BrotliStream bso = new BrotliStream(fso, CompressionLevel.SmallestSize))
+            {
+                Console.WriteLine("Input path: " + args[1]);
+                Console.WriteLine("Output path: " + args[2]);
+                Span<byte> buffer = stackalloc byte[4 << 14];
+                Console.WriteLine("Input filesize: " + fsi.Length + " bytes");
+
+                int read = 0;
+                long curRead = 0;
+                long length = fsi.Length;
+                while ((read = fsi.Read(buffer)) > 0)
+                {
+                    curRead += read;
+                    Console.Write($"\rCompressing: {Math.Round(((double)curRead / length) * 100, 4)}%...");
+                    bso.Write(buffer.Slice(0, read));
+                }
+                Console.WriteLine(" Completed!");
+                Console.WriteLine("Output filesize: " + fso.Length + " bytes");
+                Console.WriteLine($"Compression ratio: {Math.Round(((double)fso.Length / fsi.Length) * 100, 4)}%");
+            }
+
+            return 0;
+        }
+
+        static void Main(params string[] args)
+        {
+            if (args.Length != 0 && args[0].ToLower() == "compress")
+            {
+                CompressMode(args);
+                return;
+            }
+
             Process proc;
             if (Directory.GetCurrentDirectory().Trim('\\') != realExecDir.Trim('\\'))
             {
