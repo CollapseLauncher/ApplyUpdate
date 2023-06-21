@@ -1,4 +1,5 @@
-﻿using Hi3Helper.Http;
+﻿using CollapseLauncher;
+using Hi3Helper.Http;
 using System;
 using System.Diagnostics;
 using System.Formats.Tar;
@@ -7,12 +8,13 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ApplyUpdate
 {
     internal class Program
     {
-        public const string repoURL = "https://github.com/neon-nyan/CollapseLauncher-ReleaseRepo/raw/main";
+        public static int PreferredCDNIndex = 0;
 
         public static string realExecPath = Process.GetCurrentProcess().MainModule.FileName;
         public static string realExecDir { get => Path.GetDirectoryName(realExecPath); }
@@ -25,10 +27,17 @@ namespace ApplyUpdate
         public static readonly string[] excludeDeleteFile = new string[]
         {
             // Generic Files
+#if DEBUG
+            "ApplyUpdate.",
+#else
             "ApplyUpdate.exe",
+#endif
+            "config.ini",
             "release",
             "CollapseLauncher.Hi3CacheUpdater.cmd",
             "_Temp",
+            "unins00",
+            "unins000",
 
             // Game Files (we added this in-case the user uses the same directory as the executable)
             "Hi3SEA", "Hi3Global", "Hi3TW", "Hi3KR", "Hi3CN", "Hi3JP", "BH3",
@@ -89,7 +98,7 @@ namespace ApplyUpdate
             return 0;
         }
 
-        static void Main(params string[] args)
+        static async Task Main(params string[] args)
         {
             if (args.Length != 0 && args[0].ToLower() == "compress")
             {
@@ -113,13 +122,50 @@ namespace ApplyUpdate
             int cw = 1;
             while (IsCollapseRunning())
             {
-                Console.WriteLine($"Waiting for Collapse Launcher to close... (Attempt: {cw})");
+                Console.WriteLine(GetBothAlignedString("Waiting for Collapse Launcher to close...", $"[Attempt: {cw}]"));
                 Thread.Sleep(1000);
                 cw++;
             }
 
-            if (args.Length > 0 && args[0] == "reapply")
+            Console.Write("Getting Collapse release channel information... ");
+
+            TryDoPathAction(zipExtractPath, PathAction.delete, PathType.directory);
+            TryDoPathAction(tempDir, PathAction.create, PathType.directory);
+
+            try
             {
+                string stamp = DetermineReleaseChannel();
+                if (stamp == null)
+                {
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadLine();
+                    return;
+                }
+
+                Console.WriteLine($"Found! (using: {stamp} channel)");
+                if (!await SelectPreferredCDN()) return;
+
+                CleanupOldFiles();
+
+                if (!File.Exists(zipPath))
+                {
+                    string packageURL = FallbackCDNUtil.CombineURLFromString("squirrel", stamp, "latest");
+                    using (Http httpClient = new Http(true))
+                    {
+                        Console.Write($"Initializing package download... ");
+                        FallbackCDNUtil.DownloadProgress += (_, progress) =>
+                        {
+                            string print = GetBothAlignedString($"Downloading package: {Math.Round(progress.ProgressPercentage, 2)}% [{SummarizeSizeSimple(progress.Speed)}/s]...", $"[{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}]");
+                            Console.Write($"\r{print}");
+                        };
+                        await FallbackCDNUtil.DownloadCDNFallbackContent(httpClient, zipPath, (byte)(Environment.ProcessorCount > 8 ? 8 : Environment.ProcessorCount), packageURL, default);
+                        Console.WriteLine();
+                    }
+                }
+
+                // Extract the file
+                ExtractPackage(zipPath, zipExtractPath);
+
                 while (true)
                 {
                     // Remove old folders
@@ -127,14 +173,9 @@ namespace ApplyUpdate
                     {
                         foreach (string oldPath in Directory.EnumerateDirectories(workingDir, "app-*", SearchOption.TopDirectoryOnly))
                         {
-                            Directory.Delete(oldPath, true);
+                            TryDoPathAction(oldPath, PathAction.delete, PathType.directory);
                         }
-
-                        string pkgPath = Path.Combine(workingDir, "packages");
-                        if (Directory.Exists(pkgPath))
-                        {
-                            Directory.Delete(pkgPath, true);
-                        }
+                        TryDoPathAction(Path.Combine(workingDir, "packages"), PathAction.delete, PathType.directory);
 
                         break;
                     }
@@ -152,7 +193,7 @@ namespace ApplyUpdate
                 // Remove temp folder
                 try
                 {
-                    Directory.Delete(tempDir, true);
+                    TryDoPathAction(tempDir, PathAction.delete, PathType.directory);
                 }
                 catch (Exception ex)
                 {
@@ -181,61 +222,201 @@ namespace ApplyUpdate
 
                 return;
             }
-
-            Console.Write("Getting Collapse release channel information... ");
-
-            if (Directory.Exists(zipExtractPath))
+            catch (Exception ex)
             {
-                Directory.Delete(zipExtractPath, true);
-            }
-
-            if (!Directory.Exists(tempDir))
-            {
-                Directory.CreateDirectory(tempDir);
-            }
-
-            string stamp = DetermineReleaseChannel();
-            if (stamp == null)
-            {
+                Console.WriteLine($"A fatal error has occurred while running the installer!\r\n{ex}");
+                Console.WriteLine("Press any key to exist...");
                 Console.ReadLine();
-                return;
             }
+        }
 
-            Console.WriteLine($"Found! (using: {stamp} channel)");
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+        private static async ValueTask<bool> SelectPreferredCDN()
+        {
+            Console.Write("Select your preferred CDN:");
+            int i = 1;
+            Console.WriteLine(string.Join(',', FallbackCDNUtil.CDNList.Select(x => $" {i++}) " + x.Name)));
 
-            CleanupOldFiles();
-
-            if (!File.Exists(zipPath))
+            CancellationTokenSource selectToken = new CancellationTokenSource();
+            try
             {
-                string packageURL = CombineURLFromString(repoURL, "squirrel", stamp, "latest");
-                using (Http httpClient = new Http(true))
+                Task.Run(() => GetSelectPreferredCDNValue(selectToken));
+                int count = 10;
+                while (count > 0)
                 {
-                    Console.Write($"Initializing package download... ");
-                    httpClient.DownloadProgress += (_, progress) =>
-                    {
-                        Console.Write($"\rDownloading package {Math.Round(progress.ProgressPercentage, 2)}% ({SummarizeSizeSimple(progress.Speed)}/s)" +
-                            $"\t[{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}]...       ");
-                    };
-                    httpClient.Download(packageURL, zipPath, (byte)(Environment.ProcessorCount > 8 ? 8 : Environment.ProcessorCount), false, default).GetAwaiter().GetResult();
-                    httpClient.Merge().GetAwaiter().GetResult();
-                    Console.WriteLine("Done!");
+                    Console.Write($"\rSelect in {count--}... (Default: {PreferredCDNIndex + 1}: ({FallbackCDNUtil.CDNList[PreferredCDNIndex].Name}))> ");
+                    await Task.Delay(1000, selectToken.Token);
                 }
             }
+            catch { }
+            selectToken.Cancel();
+            Console.WriteLine($"\r\nSelected {PreferredCDNIndex + 1}: {FallbackCDNUtil.CDNList[PreferredCDNIndex].Name}");
 
-            // Extract the file
-            ExtractPackage(zipPath, zipExtractPath);
+            return true;
+        }
 
-            // Restart ApplyUpdate to apply the update
-            proc = new Process()
+        private static void GetSelectPreferredCDNValue(CancellationTokenSource token)
+        {
+            while (true)
             {
-                StartInfo = new ProcessStartInfo
+                string selectionStr = Console.ReadLine();
+                if (string.IsNullOrEmpty(selectionStr))
                 {
-                    UseShellExecute = true,
-                    FileName = realExecPath,
-                    Arguments = "reapply"
+                    token.Cancel();
+                    Console.CursorTop--;
+                    return;
                 }
+                if (!int.TryParse(selectionStr, out int selection) || selection > FallbackCDNUtil.CDNList.Count || selection < 0)
+                {
+                    Console.WriteLine("Input is invalid!");
+                    continue;
+                }
+
+                if (token.IsCancellationRequested) return;
+                token.Cancel();
+                PreferredCDNIndex = selection - 1;
+                Console.CursorTop--;
+            }
+        }
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+
+        private static void TryCreateDirectory(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                FileInfo fileInfo = new FileInfo(path);
+                fileInfo.IsReadOnly = false;
+                fileInfo.Delete();
+            }
+        }
+
+        private static void TryDoPathAction(string path, PathAction action, PathType type)
+        {
+            bool isFile = type == PathType.file;
+
+            if (isFile && action == PathAction.create) throw new ArgumentException("File type doesn't support create action!", "action");
+
+            try
+            {
+                if (isFile)
+                {
+                    TryDeleteFile(path);
+                    return;
+                }
+
+                switch (action)
+                {
+                    case PathAction.create:
+                        TryCreateDirectory(path);
+                        break;
+                    case PathAction.delete:
+                        TryDeleteDirectory(path);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed while trying to {action} a {type}: {path} -> {ex.Message}", ex);
+            }
+        }
+
+        enum PathAction
+        {
+            create,
+            delete
+        }
+
+        enum PathType
+        {
+            file,
+            directory
+        }
+
+        enum StringAlign
+        {
+            left, center, right
+        }
+
+        private static bool _isConsoleWindowHasWidth = IsConsoleWindowHasWidth();
+        private static int _windowBufferWidth { get => _isConsoleWindowHasWidth ? Console.WindowWidth : 0; }
+
+        private static bool IsConsoleWindowHasWidth()
+        {
+            try
+            {
+                _ = Console.WindowWidth;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string GetBothAlignedString(string leftString, string rightString)
+        {
+            if (_windowBufferWidth == 0)
+            {
+                return leftString + ' ' + rightString;
+            }
+
+            int spaceWidth = _windowBufferWidth - 1 - (leftString.Length + rightString.Length);
+            return leftString + new string(' ', spaceWidth) + rightString;
+        }
+
+        private static StringBuilder _globalStrBuilder = new StringBuilder();
+
+        private static void PrintAlignedString(string inputString, StringAlign align, bool isNewLine = false, bool isFlushCurrentLine = false)
+        {
+            int spaceLength = align switch
+            {
+                StringAlign.center => (int)(((double)_windowBufferWidth / 2) - ((double)inputString.Length / 2)),
+                StringAlign.right => _windowBufferWidth - inputString.Length,
+                _ => 0
             };
-            proc.Start();
+
+            if (isFlushCurrentLine)
+            {
+                Console.Write('\r' + new string(' ', spaceLength) + '\r');
+            }
+            else
+            {
+                if (_isConsoleWindowHasWidth) Console.CursorLeft = spaceLength;
+            }
+
+            if (isNewLine)
+            {
+                Console.WriteLine(inputString);
+            }
+            else
+            {
+                Console.Write(inputString);
+            }
         }
 
         private static bool IsCollapseRunning() => Process.GetProcessesByName("CollapseLauncher").Length != 0;
@@ -243,32 +424,31 @@ namespace ApplyUpdate
         private static void MoveExtractedPackage(string source, string destination)
         {
             int offset = source.Length + 1;
+            string[] files = Directory.GetFiles(source, "*", SearchOption.AllDirectories);
 
-            foreach (string sourceFile in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+            int i = 1;
+            foreach (string sourceFile in files)
             {
                 string baseName = sourceFile.AsSpan().Slice(offset).ToString();
                 string destPath = Path.Combine(destination, baseName);
                 string destDir = Path.GetDirectoryName(destPath);
 
-                if (!Directory.Exists(destDir))
-                {
-                    Directory.CreateDirectory(destDir);
-                }
+                TryDoPathAction(destDir, PathAction.create, PathType.directory);
 
                 try
                 {
-                    Console.Write($"Moving: {baseName}... ");
+                    Console.Write('\r' + GetBothAlignedString($"Moving: {baseName}...", $"[{i++} / {files.Length}]"));
                     File.Move(sourceFile, destPath, true);
-                    Console.WriteLine($"Done!");
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine();
                     Console.WriteLine($"Failed! Copying it instead!\r\n{ex}");
                     try
                     {
-                        Console.Write($"Copying: {baseName}... ");
+                        Console.Write('\r' + GetBothAlignedString($"Copying: {baseName}...", $"[{i++} / {files.Length}]"));
                         File.Copy(sourceFile, destPath, true);
-                        Console.WriteLine($"Done!");
+                        Console.WriteLine();
                     }
                     catch
                     {
@@ -278,6 +458,7 @@ namespace ApplyUpdate
                     return;
                 }
             }
+            Console.WriteLine();
         }
 
         private static void CleanupOldFiles()
@@ -317,17 +498,21 @@ namespace ApplyUpdate
             Console.WriteLine();
 
             int offset = workingDir.Length + 1;
+            int i = 1;
             foreach (string path in Directory.EnumerateDirectories(workingDir, "*", SearchOption.TopDirectoryOnly))
             {
                 if (!IsExceptedFiles(path))
                 {
                     try
                     {
-                        Console.Write($"Deleting folder: {path.AsSpan().Slice(offset)}... ");
-                        Directory.Delete(path, true);
-                        Console.WriteLine("Done!");
+                        Console.Write('\r' + GetBothAlignedString($"Deleting folder: {path.AsSpan().Slice(offset)}...", $"[{i++} / ?]"));
+                        TryDoPathAction(path, PathAction.delete, PathType.directory);
                     }
-                    catch (Exception ex) { Console.WriteLine($"Error!\r\n{ex}"); }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine($"Error!\r\n{ex}");
+                    }
                 }
             }
 
@@ -337,11 +522,14 @@ namespace ApplyUpdate
                 {
                     try
                     {
-                        Console.Write($"Deleting file: {path.AsSpan().Slice(offset)}... ");
-                        File.Delete(path);
-                        Console.WriteLine("Done!");
+                        Console.Write('\r' + GetBothAlignedString($"Deleting folder: {path.AsSpan().Slice(offset)}...", $"[{i++} / ?]"));
+                        TryDoPathAction(path, PathAction.delete, PathType.file);
                     }
-                    catch (Exception ex) { Console.WriteLine($"Error!\r\n{ex}"); }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine($"Error!\r\n{ex}");
+                    }
                 }
             }
 
@@ -350,12 +538,16 @@ namespace ApplyUpdate
             {
                 try
                 {
-                    Console.Write($"Deleting file: {applyUpdateConfig.AsSpan().Slice(offset)}... ");
-                    File.Delete(applyUpdateConfig);
-                    Console.WriteLine("Done!");
+                    Console.Write('\r' + GetBothAlignedString($"Deleting folder: {applyUpdateConfig.AsSpan().Slice(offset)}...", $"[{i++} / ?]"));
+                    TryDoPathAction(applyUpdateConfig, PathAction.delete, PathType.file);
                 }
-                catch (Exception ex) { Console.WriteLine($"Error!\r\n{ex}"); }
+                catch (Exception ex)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine($"Error!\r\n{ex}");
+                }
             }
+            Console.WriteLine();
         }
 
         private static bool IsExceptedFiles(string path) => excludeDeleteFile.Any(x => path.Contains(x));
@@ -389,14 +581,18 @@ namespace ApplyUpdate
         private static void ExtractPackage(string packageFile, string outputFolder)
         {
             using (FileStream fs = new FileStream(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 4 << 10, FileOptions.DeleteOnClose))
-            using (MemoryStream ms = CopyBrotliToMemoryStream(fs))
+            using (Stream ms = new BrotliStream(fs, CompressionMode.Decompress))
             using (TarReader tar = new TarReader(ms))
             {
+                int i = 1;
                 while (tar.GetNextEntry() is TarEntry entry)
                 {
+                    Console.Write('\r' + GetBothAlignedString($"Extracting: {entry.Name}...", $"[{i++} / ?]"));
                     CreateFileFromStream(outputFolder, entry);
                 }
+                tar.Dispose();
             }
+            Console.WriteLine();
         }
 
         private static readonly string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
@@ -407,58 +603,20 @@ namespace ApplyUpdate
             return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
         }
 
-        private static string CombineURLFromString(ReadOnlySpan<char> baseURL, params string[] segments)
-        {
-            StringBuilder builder = new StringBuilder().Append(baseURL.TrimEnd('/'));
-
-            foreach (ReadOnlySpan<char> a in segments)
-            {
-                bool isMacros = a.StartsWith("?");
-                if (!isMacros)
-                {
-                    builder.Append('/');
-                }
-                builder.Append(a.Trim('/'));
-            }
-
-            return builder.ToString();
-        }
-
         private static void CreateFileFromStream(string outputDir, TarEntry entry)
         {
             string pathTo = Path.Combine(outputDir, entry.Name);
             string pathDir = Path.GetDirectoryName(pathTo);
-            if (!Directory.Exists(pathDir))
-            {
-                Directory.CreateDirectory(pathDir);
-            }
+            TryDoPathAction(pathDir, PathAction.create, PathType.directory);
 
-            using (Stream stream = entry.DataStream)
+            Stream stream = entry.DataStream;
+            if (stream != null)
             {
-                if (stream != null)
+                using (Stream fs = new FileStream(pathTo, FileMode.Create, FileAccess.Write))
                 {
-                    using (Stream fs = new FileStream(pathTo, FileMode.Create, FileAccess.Write))
-                    {
-                        Console.Write($"Extracting: {entry.Name}... ");
-                        stream.CopyTo(fs);
-                        Console.WriteLine($"Done!");
-                    }
+                    stream.CopyTo(fs);
                 }
             }
-        }
-
-        private static MemoryStream CopyBrotliToMemoryStream(Stream source)
-        {
-            MemoryStream memory = new MemoryStream();
-            using (BrotliStream brotli = new BrotliStream(source, CompressionMode.Decompress, true))
-            {
-                Console.Write("Buffering package to memory...");
-                brotli.CopyTo(memory);
-                Console.WriteLine(" Done!");
-            }
-
-            memory.Position = 0;
-            return memory;
         }
     }
 }

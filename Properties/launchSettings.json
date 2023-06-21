@@ -1,8 +1,7 @@
 {
   "profiles": {
     "ApplyUpdate": {
-      "commandName": "Project",
-      "commandLineArgs": "reapply"
+      "commandName": "Project"
     }
   }
 }
