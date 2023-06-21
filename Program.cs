@@ -92,7 +92,7 @@ namespace ApplyUpdate
                 }
                 Console.WriteLine(" Completed!");
                 Console.WriteLine("Output filesize: " + fso.Length + " bytes");
-                Console.WriteLine($"Compression ratio: {Math.Round(((double)fso.Length / fsi.Length) * 100, 4)}%");
+                Console.WriteLine($"Compression ratio: {Math.Round((double)fso.Length / fsi.Length * 100, 4)}%");
             }
 
             return 0;

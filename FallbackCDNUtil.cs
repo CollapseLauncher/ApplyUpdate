@@ -14,6 +14,7 @@ namespace CollapseLauncher
     {
         public string URLPrefix { get; set; }
         public string Name { get; set; }
+        public bool PartialDownloadSupport { get; set; }
     }
     internal static class FallbackCDNUtil
     {
@@ -22,17 +23,25 @@ namespace CollapseLauncher
             new CDNURLProperty
             {
                 Name = "GitHub",
-                URLPrefix = "https://github.com/neon-nyan/CollapseLauncher-ReleaseRepo/raw/main"
+                URLPrefix = "https://github.com/neon-nyan/CollapseLauncher-ReleaseRepo/raw/main",
+                PartialDownloadSupport = true
+            },
+            new CDNURLProperty
+            {
+                Name = "Bitbucket",
+                URLPrefix = "http://bitbucket.org/neon-nyan/collapselauncher-releaserepo/raw/main"
             },
             new CDNURLProperty
             {
                 Name = "Statically",
-                URLPrefix = "https://cdn.statically.io/gh/neon-nyan/CollapseLauncher-ReleaseRepo/main"
+                URLPrefix = "https://cdn.statically.io/gh/neon-nyan/CollapseLauncher-ReleaseRepo/main",
+                PartialDownloadSupport = true
             },
             new CDNURLProperty
             {
                 Name = "jsDelivr",
-                URLPrefix = "https://cdn.jsdelivr.net/gh/neon-nyan/CollapseLauncher-ReleaseRepo@latest"
+                URLPrefix = "https://cdn.jsdelivr.net/gh/neon-nyan/CollapseLauncher-ReleaseRepo@latest",
+                PartialDownloadSupport = true
             }
         };
 
@@ -151,6 +160,12 @@ namespace CollapseLauncher
                 if (!urlStatus.Item1) return false;
 
                 // Continue to get the content and return true if successful
+                if (!cdnProp.PartialDownloadSupport)
+                {
+                    // If the CDN marked to not supporting the partial download, then use single thread mode download.
+                    await httpInstance.Download(urlStatus.Item2, outputPath, true, null, null, token);
+                    return true;
+                }
                 await httpInstance.Download(urlStatus.Item2, outputPath, (byte)parallelThread, true, token);
                 await httpInstance.Merge();
                 return true;
