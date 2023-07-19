@@ -28,6 +28,12 @@ namespace CollapseLauncher
             },
             new CDNURLProperty
             {
+                Name = "Cloudflare",
+                URLPrefix = "https://r2-render.bagelnl.my.id/cl-cdn",
+                PartialDownloadSupport = true
+            },
+            new CDNURLProperty
+            {
                 Name = "Bitbucket",
                 URLPrefix = "http://bitbucket.org/neon-nyan/collapselauncher-releaserepo/raw/main"
             },
