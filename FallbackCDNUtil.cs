@@ -29,25 +29,13 @@ namespace CollapseLauncher
             new CDNURLProperty
             {
                 Name = "Cloudflare",
-                URLPrefix = "https://r2-render.bagelnl.my.id/cl-cdn",
+                URLPrefix = "https://r2.bagelnl.my.id/cl-cdn",
                 PartialDownloadSupport = true
             },
             new CDNURLProperty
             {
                 Name = "Bitbucket",
                 URLPrefix = "https://bitbucket.org/neon-nyan/collapselauncher-releaserepo/raw/main",
-            },
-            new CDNURLProperty
-            {
-                Name = "Statically",
-                URLPrefix = "https://cdn.statically.io/gh/neon-nyan/CollapseLauncher-ReleaseRepo/main",
-                PartialDownloadSupport = true
-            },
-            new CDNURLProperty
-            {
-                Name = "jsDelivr",
-                URLPrefix = "https://cdn.jsdelivr.net/gh/neon-nyan/CollapseLauncher-ReleaseRepo@latest",
-                PartialDownloadSupport = true
             }
         };
 
