@@ -1,5 +1,4 @@
-﻿using ApplyUpdate;
-using Hi3Helper.Http;
+﻿using Hi3Helper.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +15,8 @@ namespace CollapseLauncher
         public string Name { get; set; }
         public bool PartialDownloadSupport { get; set; }
     }
-    internal static class FallbackCDNUtil
+
+    public static class FallbackCDNUtil
     {
         public static List<CDNURLProperty> CDNList => new List<CDNURLProperty>
         {
@@ -110,7 +110,7 @@ namespace CollapseLauncher
             outputStream.Position = 0;
         }
 
-        private static async ValueTask<bool> TryGetCDNContent(CDNURLProperty cdnProp, Http httpInstance, Stream outputStream, string relativeURL, CancellationToken token)
+        private static async Task<bool> TryGetCDNContent(CDNURLProperty cdnProp, Http httpInstance, Stream outputStream, string relativeURL, CancellationToken token)
         {
             try
             {
@@ -140,7 +140,7 @@ namespace CollapseLauncher
             }
         }
 
-        private static async ValueTask<bool> TryGetCDNContent(CDNURLProperty cdnProp, Http httpInstance, string outputPath, string relativeURL, int parallelThread, CancellationToken token)
+        private static async Task<bool> TryGetCDNContent(CDNURLProperty cdnProp, Http httpInstance, string outputPath, string relativeURL, int parallelThread, CancellationToken token)
         {
             try
             {
@@ -198,11 +198,11 @@ namespace CollapseLauncher
             return (true, absoluteURL);
         }
 
-        public static string CombineURLFromString(ReadOnlySpan<char> baseURL, params string[] segments)
+        public static string CombineURLFromString(string baseURL, params string[] segments)
         {
             StringBuilder builder = new StringBuilder().Append(baseURL.TrimEnd('/'));
 
-            foreach (ReadOnlySpan<char> a in segments)
+            foreach (string a in segments)
             {
                 if (a.Length == 0) continue;
 
@@ -217,7 +217,8 @@ namespace CollapseLauncher
             return builder.ToString();
         }
 
-        public static CDNURLProperty GetPreferredCDN() => CDNList[Program.PreferredCDNIndex];
+        public static int PreferredCDNIndex = 0;
+        public static CDNURLProperty GetPreferredCDN() => CDNList[PreferredCDNIndex];
 
         // Re-send the events to the static DownloadProgress
         private static void HttpInstance_DownloadProgressAdapter(object sender, DownloadEvent e) => DownloadProgress?.Invoke(sender, e);

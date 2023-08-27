@@ -1,0 +1,99 @@
+﻿<Window x:Class="ApplyUpdateGUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:ApplyUpdateGUI"
+        xmlns:cl="clr-namespace:CollapseLauncher"
+        mc:Ignorable="d"
+        Title="Collapse Apply Update" Height="290" Width="500"
+        Background="#01000000"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        WindowStartupLocation="CenterScreen"
+        MouseDown="DragEntireWindow">
+    <Grid>
+        <ui:TitleBar ShowMaximize="false"/>
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="90"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <TextBlock Text="We're updating" FontSize="24" FontWeight="Normal"/>
+                <TextBlock Text="Collapse Launcher" FontSize="32" FontWeight="Bold"/>
+            </StackPanel>
+            <Grid x:Name="UpdateCDNSelectorPanel" Visibility="Visible" VerticalAlignment="Stretch" Grid.Row="1">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="UpdateCDNSelectorTitle" TextWrapping="Wrap" Text="Select your CDN for update" HorizontalAlignment="Center" FontSize="16" FontWeight="Medium" Margin="0,0,0,0"/>
+                    <StackPanel x:Name="UpdateCDNRadioButtons" HorizontalAlignment="Center" Orientation="Horizontal">
+                        <ComboBox x:Name="UpdateCDNComboBox" ItemsSource="{x:Static cl:FallbackCDNUtil.CDNList}"
+                                  DisplayMemberPath="Name" MinWidth="200" Margin="0,8"
+                                  SelectedIndex="{x:Static cl:FallbackCDNUtil.PreferredCDNIndex}"
+                                  SelectionChanged="UpdateCDNComboBoxSelectionChanged"/>
+                        <ui:Button Margin="8,0,0,0" HorizontalAlignment="Center" Appearance="Primary" Click="StartUpdateRoutine">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Margin="0,2,0,0" Symbol="ClockArrowDownload24"/>
+                                <TextBlock Margin="8,0,0,0" Text="Update Now!"/>
+                            </StackPanel>
+                        </ui:Button>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock x:Name="UpdateCDNSelectorSubtitle" TextWrapping="Wrap" Text="Never gonna give you up, never gonna let you down~"
+                           VerticalAlignment="Bottom" HorizontalAlignment="Center" FontSize="12" FontWeight="Normal"/>
+            </Grid>
+            <Grid x:Name="UpdateProgressPanel" Visibility="Collapsed" VerticalAlignment="Stretch" Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="90"/>
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Update:"/>
+                        <TextBlock Grid.Row="1">
+                            <Run x:Name="UpdateVersionOld" Text="-" FontWeight="Bold"/>
+                            <Run Text="to"/>
+                            <Run x:Name="UpdateVersionNew" Text="-" FontWeight="Bold" Foreground="{ui:ThemeResource ResourceKey=AccentColor}"/>
+                        </TextBlock>
+                        <TextBlock Text="Channel:" TextAlignment="Right" Grid.Row="0" Grid.Column="2"/>
+                        <TextBlock x:Name="ChannelName" Text="Unknown" TextAlignment="Right" FontWeight="Bold" Grid.Row="1" Grid.Column="2" Foreground="{ui:ThemeResource ResourceKey=AccentColor}"/>
+                    </Grid>
+                </StackPanel>
+                <StackPanel x:Name="UpdateCDNProgressPanel" VerticalAlignment="Bottom" Grid.Row="1">
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.ColumnSpan="3">
+                            <TextBlock x:Name="Status" Text="Status:" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="ActivityStatus" Text="Idle" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="ActivitySubStatus" Text="- B / - B" FontWeight="Bold"/>
+                        </StackPanel>
+                        <StackPanel x:Name="ProgressStatus" Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                            <TextBlock Text="{Binding Value, ElementName=progressBar}" FontWeight="Bold"/>
+                            <TextBlock Text="%"/>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Right" Grid.Column="2">
+                            <TextBlock/>
+                            <TextBlock x:Name="SpeedStatus" Text="- B/s" HorizontalAlignment="Right" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TimeEstimation" Text="--m--s" HorizontalAlignment="Right" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Grid>
+                    <ProgressBar x:Name="progressBar" Value="0" Maximum="100" IsIndeterminate="True"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
