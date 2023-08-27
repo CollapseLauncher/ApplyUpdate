@@ -357,6 +357,7 @@ namespace ApplyUpdateGUI
                     Console.Write($"\rLaunching Collapse in {count--}... ");
                     await Task.Delay(1000);
                 }
+                Console.WriteLine();
                 Process proc = new Process()
                 {
                     StartInfo = new ProcessStartInfo
@@ -368,7 +369,7 @@ namespace ApplyUpdateGUI
 
                 // Start Collapse
                 proc.Start();
-                Environment.Exit(0);
+                MainEntry.m_App.Shutdown();
 
                 return;
             }

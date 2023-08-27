@@ -115,12 +115,26 @@ namespace ApplyUpdateGUI
             return 0;
         }
 
+        internal static App m_App { get; set; }
+
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void RunApp()
         {
-            App app = new App();
-            app.InitializeComponent();
-            app.Run();
+#if !DEBUG
+            IntPtr consoleWinPtr = GetConsoleWindow();
+            ShowWindow(consoleWinPtr, 0);
+#endif
+
+            m_App = new App();
+            m_App.Exit += (a, b) =>
+            {
+#if !DEBUG
+                ShowWindow(consoleWinPtr, 5);
+                Console.WriteLine("Quit from ApplyUpdate and restored the console window.");
+#endif
+            };
+            m_App.InitializeComponent();
+            m_App.Run();
         }
 
         private static void AllocateConsole()
