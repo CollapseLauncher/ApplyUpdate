@@ -30,9 +30,13 @@
                     <TextBlock x:Name="UpdateCDNSelectorTitle" TextWrapping="Wrap" Text="Select your CDN for update" HorizontalAlignment="Center" FontSize="16" FontWeight="Medium" Margin="0,0,0,0"/>
                     <StackPanel x:Name="UpdateCDNRadioButtons" HorizontalAlignment="Center" Orientation="Horizontal">
                         <ComboBox x:Name="UpdateCDNComboBox" ItemsSource="{x:Static cl:FallbackCDNUtil.CDNList}"
-                                  DisplayMemberPath="Name" MinWidth="200" Margin="0,8"
+                                  DisplayMemberPath="Name" MinWidth="150" Margin="0,8"
                                   SelectedIndex="{x:Static cl:FallbackCDNUtil.PreferredCDNIndex}"
                                   SelectionChanged="UpdateCDNComboBoxSelectionChanged"/>
+                        <ComboBox x:Name="UpdateReleaseSelectorBox" Visibility="Collapsed" Width="108" Margin="4,0,0,0" SelectedIndex="0">
+                            <ComboBoxItem Content="Stable"/>
+                            <ComboBoxItem Content="Preview"/>
+                        </ComboBox>
                         <ui:Button Margin="8,0,0,0" HorizontalAlignment="Center" Appearance="Primary" Click="StartUpdateRoutine">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Margin="0,2,0,0" Symbol="ClockArrowDownload24"/>

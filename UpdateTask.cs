@@ -3,13 +3,10 @@ using CollapseLauncher;
 using Hi3Helper.Http;
 using SharpCompress.Archives;
 using System;
-using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -74,13 +71,18 @@ namespace ApplyUpdateGUI
 
         internal static bool IsCollapseRunning() => Process.GetProcessesByName("CollapseLauncher").Length != 0;
 
-        internal static string DetermineReleaseChannel()
+        internal static string TryGetStampFilePath()
         {
             string stampFilePath = Path.Combine(tempDir, "release");
             string stampFilePath2 = Path.Combine(workingDir, "release");
 
             string stampFile = File.Exists(stampFilePath) ? stampFilePath : stampFilePath2;
+            return stampFile;
+        }
 
+        internal static string DetermineReleaseChannel()
+        {
+            string stampFile = TryGetStampFilePath();
             if (!File.Exists(stampFile))
             {
                 Console.WriteLine($"\"release\" file doesn't exist in \"_Temp\\release\" or current directory");
@@ -288,7 +290,7 @@ namespace ApplyUpdateGUI
 
                 try
                 {
-                   
+
                     Console.Write('\r' + GetBothAlignedString($"Moving: {baseName}...", $"[{i++} / {files.Length}]"));
                     if (File.Exists(destPath)) File.Delete(destPath);
                     File.Move(sourceFile, destPath);

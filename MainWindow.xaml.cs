@@ -175,12 +175,11 @@ namespace ApplyUpdateGUI
         }
 
         private CancellationTokenSource CountDownToken { get; set; }
-        private CancellationTokenSource TaskToken { get; set; }
+        private string Stamp { get; set; }
+        private bool IsStampFromFile { get; set; }
 
         private async Task<string> RunPrecheckTask()
         {
-            Console.Write("Getting Collapse release channel information... ");
-
             if (Directory.GetCurrentDirectory().Trim('\\') != realExecDir.Trim('\\'))
             {
                 Directory.SetCurrentDirectory(realExecDir);
@@ -199,16 +198,24 @@ namespace ApplyUpdateGUI
             UpdateCDNRadioButtons.IsEnabled = true;
             UpdateCDNSelectorTitle.Text = previousTitleStr;
 
-            string stamp = DetermineReleaseChannel();
-            if (stamp == null)
+            string stamp;
+            if (IsStampFromFile)
             {
-                UpdateCDNRadioButtons.Visibility = Visibility.Collapsed;
-                UpdateCDNSelectorTitle.Text = "ERROR:\r\n\"release\" file doesn't exist or the file doesn't have \"stable\" or \"preview\" string in it";
-                UpdateCDNSelectorSubtitle.Text = "Please check your \"release\" file and try again.";
-                return null;
+                stamp = DetermineReleaseChannel();
+                if (stamp == null)
+                {
+                    UpdateCDNRadioButtons.Visibility = Visibility.Collapsed;
+                    UpdateCDNSelectorTitle.Text = "ERROR:\r\n\"release\" file doesn't have \"stable\" or \"preview\" string in it";
+                    UpdateCDNSelectorSubtitle.Text = "Please check your \"release\" file and try again.";
+                    return null;
+                }
             }
-
-            Console.WriteLine($"Found! (using: {stamp} channel)");
+            else
+            {
+                string selectedValue = ((ComboBoxItem)UpdateReleaseSelectorBox.SelectedValue).Content as string;
+                stamp = selectedValue.ToLower();
+                return stamp;
+            }
 
             return stamp;
         }
@@ -218,6 +225,13 @@ namespace ApplyUpdateGUI
             CountDownToken = new CancellationTokenSource();
             int countdown = 5;
             const string CDNSelectorSubtitle = "The CDN will be automatically selected in: {0}";
+
+            string releaseFile = TryGetStampFilePath();
+            if (!(IsStampFromFile = File.Exists(releaseFile)))
+            {
+                UpdateReleaseSelectorBox.Visibility = Visibility.Visible;
+                countdown += 5;
+            }
 
             try
             {
@@ -270,31 +284,31 @@ namespace ApplyUpdateGUI
 
         private async Task InnerUpdateRoutine()
         {
-            string stamp = null;
-            if ((stamp = await RunPrecheckTask()) == null) return;
+            Console.Write("Getting Collapse release channel information... ");
+            if ((Stamp = await RunPrecheckTask()) == null) return;
+            Console.WriteLine($"Found! (using: {Stamp} channel)");
 
             EventProgress += UpdateTask_UpdateProgress;
             EventStatus += UpdateTask_UpdateStatus;
 
             try
             {
-                TaskToken = new CancellationTokenSource();
                 UpdateCDNSelectorPanel.Visibility = Visibility.Collapsed;
                 UpdateProgressPanel.Visibility = Visibility.Visible;
 
-                AppUpdateVersionProp metadataProp = await FetchMetadata(stamp);
+                AppUpdateVersionProp metadataProp = await FetchMetadata(Stamp);
                 GameVersion newVersion = new GameVersion(metadataProp.ver);
                 GameVersion? oldVersion = GetOldVersion();
 
                 UpdateVersionOld.Text = oldVersion.HasValue ? oldVersion.Value.VersionString : "none";
                 UpdateVersionNew.Text = newVersion.VersionString;
-                ChannelName.Text = char.ToUpper(stamp[0]) + stamp.Substring(1);
+                ChannelName.Text = char.ToUpper(Stamp[0]) + Stamp.Substring(1);
 
                 if (!await CleanupOldFiles()) Environment.Exit(int.MinValue);
 
                 TryDoPathAction(zipExtractPath, PathAction.delete, PathType.directory);
                 TryDoPathAction(tempDir, PathAction.create, PathType.directory);
-                await DownloadPackage(stamp);
+                await DownloadPackage(Stamp);
 
                 Status.Text = "Extracting package:";
 
@@ -374,7 +388,7 @@ namespace ApplyUpdateGUI
             catch (Exception ex)
             {
                 SpawnError($"ERROR:\r\nError occured while applying update!\r\n{ex.Message}");
-                Console.WriteLine($"Error occured while applying update!\r\n{ex.Message}");
+                Console.WriteLine($"Error occured while applying update!\r\n{ex}");
             }
             finally
             {
@@ -394,6 +408,7 @@ namespace ApplyUpdateGUI
 
         private void SpawnError(string message)
         {
+            MainEntry.ShowWindow(MainEntry.consoleWinPtr, 5);
             UpdateCDNProgressPanel.Visibility = Visibility.Collapsed;
             UpdateCDNSelectorPanel.Visibility = Visibility.Visible;
             UpdateCDNRadioButtons.Visibility = Visibility.Collapsed;
@@ -477,7 +492,7 @@ namespace ApplyUpdateGUI
 
         private Stopwatch _refreshStopwatchProgress = Stopwatch.StartNew();
         private Stopwatch _refreshStopwatchStatus = Stopwatch.StartNew();
-        private int _refreshInterval = 100;
+        private int _refreshInterval = 66;
         protected async Task<bool> CheckIfNeedRefreshStopwatchProgress()
         {
             if (_refreshStopwatchProgress.ElapsedMilliseconds > _refreshInterval)
