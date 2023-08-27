@@ -425,7 +425,12 @@ namespace ApplyUpdateGUI
             }
 
             int spaceWidth = _windowBufferWidth - 1 - (leftString.Length + rightString.Length);
-            return leftString + new string(' ', spaceWidth) + rightString;
+            if (spaceWidth < 0)
+            {
+                leftString = leftString.Remove(leftString.Length + (spaceWidth - 4)) + "...";
+                spaceWidth = _windowBufferWidth - 1 - (leftString.Length + rightString.Length);
+            }
+            return leftString + new string(' ', Math.Max(spaceWidth, 0)) + rightString;
         }
 
         private static void PrintAlignedString(string inputString, StringAlign align, bool isNewLine = false, bool isFlushCurrentLine = false)
