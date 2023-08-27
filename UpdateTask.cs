@@ -239,7 +239,11 @@ namespace ApplyUpdateGUI
 
         internal static async Task ExtractPackage(string packageFile, string outputFolder)
         {
-            using (FileStream fs = new FileStream(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 4 << 10, FileOptions.DeleteOnClose))
+            using (FileStream fs = new FileStream(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 4 << 10
+#if !DEBUG
+                , FileOptions.DeleteOnClose
+#endif
+                ))
             using (BrotliStream bs = new BrotliStream(fs, CompressionMode.Decompress))
             using (MemoryStream ms = new MemoryStream())
             {

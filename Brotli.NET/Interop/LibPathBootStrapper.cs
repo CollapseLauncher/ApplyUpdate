@@ -43,18 +43,8 @@ namespace Brotli
                 }
             }
             if (string.IsNullOrEmpty(fileName)) throw new NotSupportedException($"OS not supported:{Environment.OSVersion.ToString()}");
-            var paths = NativeLibraryLoader.GetPossibleRuntimeDirectories();
-            var libFound = false;
-            foreach(var path in paths)
-            {                
-                var fullPath = Path.Combine(path, fileName);
-                if (System.IO.File.Exists(fullPath))
-                {
-                    LibPath = fullPath;
-                    libFound = true;
-                    break;
-                }
-            }
+            LibPath = "brolib_x64.dll";
+            bool libFound = true;
 
             if (!libFound) throw new NotSupportedException($"Unable to find library {fileName}");
         }

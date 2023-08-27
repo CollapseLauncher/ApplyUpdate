@@ -5,10 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -277,7 +275,7 @@ namespace ApplyUpdateGUI
 
             EventProgress += UpdateTask_UpdateProgress;
             EventStatus += UpdateTask_UpdateStatus;
-            
+
             try
             {
                 TaskToken = new CancellationTokenSource();

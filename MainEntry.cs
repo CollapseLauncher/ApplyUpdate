@@ -46,6 +46,16 @@ namespace ApplyUpdateGUI
             AllocateConsole();
 #endif
 
+            consoleWinPtr = GetConsoleWindow();
+            m_App = new App();
+            m_App.Exit += (a, b) =>
+            {
+#if !DEBUG
+                ShowWindow(consoleWinPtr, 5);
+                Console.WriteLine("Quit from ApplyUpdate and restored the console window.");
+#endif
+            };
+
             if (args.Length != 0 && args[0].ToLower() == "compress")
             {
 #if !DEBUG
@@ -115,24 +125,15 @@ namespace ApplyUpdateGUI
             return 0;
         }
 
+        internal static IntPtr consoleWinPtr { get; set; }
         internal static App m_App { get; set; }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void RunApp()
         {
 #if !DEBUG
-            IntPtr consoleWinPtr = GetConsoleWindow();
             ShowWindow(consoleWinPtr, 0);
 #endif
-
-            m_App = new App();
-            m_App.Exit += (a, b) =>
-            {
-#if !DEBUG
-                ShowWindow(consoleWinPtr, 5);
-                Console.WriteLine("Quit from ApplyUpdate and restored the console window.");
-#endif
-            };
             m_App.InitializeComponent();
             m_App.Run();
         }

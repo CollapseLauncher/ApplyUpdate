@@ -75,19 +75,6 @@ namespace Brotli
             {
               return WindowsLoader.GetProcAddress(Handle, symbolName);
             }
-            if (IsLinux)
-            {
-
-                if (IsNetCore)
-                {
-                    return CoreCLRLoader.dlsym(Handle, symbolName);
-                }
-                return LinuxLoader.dlsym(Handle, symbolName);
-            }
-            if (IsMacOSX)
-            {
-                return MacOSXLoader.dlsym(Handle, symbolName);
-            }
             throw new InvalidOperationException("Unsupported platform.");
         }
 
@@ -151,18 +138,6 @@ namespace Brotli
             {
                 return WindowsLoader.FreeLibrary(handle);
             }
-            if (IsLinux)
-            {
-                if (IsNetCore)
-                {
-                    return UnloadLibraryPosix(CoreCLRLoader.dlclose, CoreCLRLoader.dlerror, handle, out errorMsg);
-                }
-                return UnloadLibraryPosix(LinuxLoader.dlclose, LinuxLoader.dlerror, handle, out errorMsg);
-            }
-            if (IsMacOSX)
-            {
-                return UnloadLibraryPosix(MacOSXLoader.dlclose, MacOSXLoader.dlerror, handle, out errorMsg);
-            }
             throw new InvalidOperationException("Unsupported platform.");
         }
 
@@ -183,42 +158,7 @@ namespace Brotli
                 }
                 return handle;
             }
-            if (IsLinux)
-            {
-                if (IsNetCore)
-                {
-                    return LoadLibraryPosix(CoreCLRLoader.dlopen, CoreCLRLoader.dlerror, libraryPath, out errorMsg);
-                }
-                return LoadLibraryPosix(LinuxLoader.dlopen, LinuxLoader.dlerror, libraryPath, out errorMsg);
-            }
-            if (IsMacOSX)
-            {
-                return LoadLibraryPosix(MacOSXLoader.dlopen, MacOSXLoader.dlerror, libraryPath, out errorMsg);
-            }
             throw new InvalidOperationException("Unsupported platform.");
-        }
-
-        static IntPtr LoadLibraryPosix(Func<string, int, IntPtr> dlopenFunc, Func<IntPtr> dlerrorFunc, string libraryPath, out string errorMsg)
-        {
-            errorMsg = null;
-            IntPtr ret = dlopenFunc(libraryPath, RtldGlobal + RtldLazy);
-            if (ret == IntPtr.Zero)
-            {
-                errorMsg = Marshal.PtrToStringAnsi(dlerrorFunc());
-            }
-            return ret;
-        }
-
-        static bool UnloadLibraryPosix(Func<IntPtr,int> dlcloseFunc, Func<IntPtr> dlerrorFunc, IntPtr handle,out string errorMsg)
-        {
-            errorMsg = null;
-            var r = dlcloseFunc(handle);
-            if (r!=0)
-            {
-                errorMsg= Marshal.PtrToStringAnsi(dlerrorFunc());
-                return false;
-            }
-            return true;
         }
     }
 }
