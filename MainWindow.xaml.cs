@@ -220,9 +220,17 @@ namespace ApplyUpdateGUI
             return stamp;
         }
 
+        private void UpdateCDNComboBoxesCancelCountdown(object sender, MouseButtonEventArgs e)
+        {
+            CountDownToken.Cancel();
+            UpdateCDNSelectorSubtitle.Text = "Select the CDN options and click \"Update Now!\" to start the update!";
+        }
+
         private async void RunCountdownTask()
         {
             CountDownToken = new CancellationTokenSource();
+            UpdateCDNComboBox.PreviewMouseDown += UpdateCDNComboBoxesCancelCountdown;
+            UpdateReleaseSelectorBox.PreviewMouseDown += UpdateCDNComboBoxesCancelCountdown;
             int countdown = 5;
             const string CDNSelectorSubtitle = "The CDN will be automatically selected in: {0}";
 
