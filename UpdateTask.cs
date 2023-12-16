@@ -47,7 +47,6 @@ namespace ApplyUpdateGUI
             "ApplyUpdate.exe",
 #endif
             "config.ini",
-            "release",
             "_Temp",
             "unins00",
             "unins000",
