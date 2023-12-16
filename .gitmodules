@@ -1,0 +1,3 @@
+[submodule "InnoSetupLogParser"]
+	path = InnoSetupLogParser
+	url = https://github.com/CollapseLauncher/InnoSetupLogParser

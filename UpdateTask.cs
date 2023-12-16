@@ -48,15 +48,14 @@ namespace ApplyUpdateGUI
 #endif
             "config.ini",
             "release",
-            "CollapseLauncher.Hi3CacheUpdater.cmd",
             "_Temp",
             "unins00",
             "unins000",
 
             // Game Files (we added this in-case the user uses the same directory as the executable)
             "Hi3SEA", "Hi3Global", "Hi3TW", "Hi3KR", "Hi3CN", "Hi3JP", "BH3",
-            "GIGlb", "GICN", "GenshinImpact", "YuanShen",
-            "SRGlb", "SRCN", "StarRail",
+            "GIGlb", "GICN", "GenshinImpact", "YuanShen", "GIBilibili",
+            "SRGlb", "SRCN", "StarRail", "HSRBilibili",
             "ZZZGlb", "ZZZCN", "ZZZ"
 #if DEBUG
             // Hi3Helper.Http DLLs
@@ -125,7 +124,7 @@ namespace ApplyUpdateGUI
             FileVersionInfo execInfo = FileVersionInfo.GetVersionInfo(switchPath2);
             string version = execInfo.FileVersion;
 
-            string title = $"A previous legacy installation of Collapse v{version} is detected!";
+            string title = $"A previous legacy installation of Collapse v{version} detected!";
             string msg = $"We detected that you have a legacy Collapse v{version} installed on your PC. "
                 + "The updater needs to clean-up all the old files inside its directory.\r\n"
                 + "Please make sure you don't have any important files inside of the Collapse directory or it will be COMPLETELY WIPED OUT!"

@@ -1,5 +1,9 @@
 ﻿using CollapseLauncher;
+using Hi3Helper.EncTool.Parser.InnoUninstallerLog;
 using Hi3Helper.Http;
+using LibISULR;
+using LibISULR.Flags;
+using LibISULR.Records;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -363,6 +367,13 @@ namespace ApplyUpdateGUI
                     throw;
                 }
 
+                string innoSetupLogPath = Path.Combine(workingDir, "unins000.dat");
+                if (File.Exists(innoSetupLogPath))
+                {
+                    Status.Text = $"Updating uninstaller index file...";
+                    await Task.Run(() => UpdateInnoSetupLog(innoSetupLogPath));
+                }
+
                 Status.Text = $"Launcher has been updated to: {newVersion.VersionString}!";
 
                 int count = 5;
@@ -404,6 +415,84 @@ namespace ApplyUpdateGUI
                 EventStatus -= UpdateTask_UpdateStatus;
             }
         }
+
+        private void UpdateInnoSetupLog(string path)
+        {
+            string directoryPath = Path.GetDirectoryName(path);
+            string searchValue = GetPathWithoutDriveLetter(directoryPath);
+
+            using (InnoUninstLog innoLog = InnoUninstLog.Load(path, true))
+            {
+                // Always set the log to x64 mode
+                innoLog.Header.IsLog64bit = true;
+
+                // Clean up the existing file and directory records
+                CleanUpInnoDirOrFilesRecord(innoLog, searchValue);
+
+                // Try register the parent path
+                RegisterDirOrFilesRecord(innoLog, directoryPath);
+
+                // Save the Inno Setup log
+                innoLog.Save(path);
+            }
+        }
+
+        private static string GetPathWithoutDriveLetter(string path)
+        {
+            int firstIndexOf = path.IndexOf('\\');
+            return firstIndexOf > -1 ? path.Substring(firstIndexOf + 1) : path;
+        }
+
+        private static void RegisterDirOrFilesRecord(InnoUninstLog innoLog, string pathToRegister)
+        {
+            DirectoryInfo currentDirectory = new DirectoryInfo(pathToRegister);
+            foreach (FileInfo fileInfo in currentDirectory.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+            {
+                if (excludeDeleteFile.Any(x => x.IndexOf(x, StringComparison.OrdinalIgnoreCase) > -1))
+                    continue;
+                innoLog.Records.Add(DeleteFileRecord.Create(fileInfo.FullName));
+            }
+
+            foreach (DirectoryInfo subdirectories in currentDirectory.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
+            {
+                RegisterDirOrFilesRecord(innoLog, subdirectories.FullName);
+            }
+            innoLog.Records.Add(DeleteDirOrFilesRecord.Create(pathToRegister));
+        }
+
+        private static void CleanUpInnoDirOrFilesRecord(InnoUninstLog innoLog, string searchValue)
+        {
+            int index = 0;
+            do
+            {
+                BaseRecord baseRecord = innoLog.Records[index];
+                bool isRecordValid = false;
+                switch (baseRecord.Type)
+                {
+                    case RecordType.DeleteDirOrFiles:
+                        isRecordValid = IsInnoRecordContainsPath<DeleteDirOrFilesFlags>(baseRecord, searchValue)
+                                     && IsDeleteDirOrFilesFlagsValid((DeleteDirOrFilesRecord)baseRecord);
+                        break;
+                    case RecordType.DeleteFile:
+                        isRecordValid = IsInnoRecordContainsPath<DeleteFileFlags>(baseRecord, searchValue)
+                                     && IsDeleteFileFlagsValid((DeleteFileRecord)baseRecord);
+                        break;
+                }
+                if (isRecordValid)
+                {
+                    innoLog.Records.RemoveAt(index);
+                    continue;
+                }
+                ++index;
+            } while (index < innoLog.Records.Count);
+        }
+
+        private static bool IsDeleteDirOrFilesFlagsValid(DeleteDirOrFilesRecord record) => (record.Flags ^ (DeleteDirOrFilesFlags.IsDir | DeleteDirOrFilesFlags.DisableFsRedir)) == 0;
+        private static bool IsDeleteFileFlagsValid(DeleteFileRecord record) => (record.Flags ^ DeleteFileFlags.DisableFsRedir) == 0;
+        private static bool IsInnoRecordContainsPath<TFlags>(BaseRecord record, string searchValue)
+            where TFlags : Enum => ((BasePathListRecord<TFlags>)record)
+            .Paths[0]
+            .IndexOf(searchValue, StringComparison.OrdinalIgnoreCase) > -1;
 
         private void ReshowProgressPanel()
         {
