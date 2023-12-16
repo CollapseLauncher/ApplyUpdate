@@ -448,8 +448,8 @@ namespace ApplyUpdateGUI
             DirectoryInfo currentDirectory = new DirectoryInfo(pathToRegister);
             foreach (FileInfo fileInfo in currentDirectory.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
             {
-                if (excludeDeleteFile.Any(x => x.IndexOf(x, StringComparison.OrdinalIgnoreCase) > -1))
-                    continue;
+                if (excludeDeleteFile.Any(x => x.IndexOf(fileInfo.FullName, StringComparison.OrdinalIgnoreCase) > -1)) continue;
+                fileInfo.IsReadOnly = false;
                 innoLog.Records.Add(DeleteFileRecord.Create(fileInfo.FullName));
             }
 
@@ -488,7 +488,7 @@ namespace ApplyUpdateGUI
         }
 
         private static bool IsDeleteDirOrFilesFlagsValid(DeleteDirOrFilesRecord record) => (record.Flags ^ (DeleteDirOrFilesFlags.IsDir | DeleteDirOrFilesFlags.DisableFsRedir)) == 0;
-        private static bool IsDeleteFileFlagsValid(DeleteFileRecord record) => (record.Flags ^ DeleteFileFlags.DisableFsRedir) == 0;
+        private static bool IsDeleteFileFlagsValid(DeleteFileRecord record) => (record.Flags & DeleteFileFlags.DisableFsRedir) != 0;
         private static bool IsInnoRecordContainsPath<TFlags>(BaseRecord record, string searchValue)
             where TFlags : Enum => ((BasePathListRecord<TFlags>)record)
             .Paths[0]
