@@ -10,6 +10,7 @@
 		<TargetName>ApplyUpdate</TargetName>
 		<Platforms>x64</Platforms>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<Version>1.2.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,12 +18,12 @@
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="SharpCompress" Version="0.33.0" />
+		<PackageReference Include="SharpCompress" Version="0.34.2" />
 		<PackageReference Include="System.IO.Hashing" Version="8.0.0" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
-		<PackageReference Include="System.Text.Json" Version="7.0.4" />
+		<PackageReference Include="System.Text.Json" Version="8.0.0" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-		<PackageReference Include="WPF-UI" Version="3.0.0-preview.6" />
+		<PackageReference Include="WPF-UI" Version="2.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -157,20 +157,17 @@ namespace ApplyUpdateGUI
 
             Loaded += (sender, args) =>
             {
-                // Theme.Apply(ThemeType.Light, IsWindows11() ? BackgroundType.Mica : BackgroundType.Acrylic);
-                ApplicationThemeManager.Apply(ApplicationTheme.Light, IsWindows11() ? WindowBackdropType.Mica : WindowBackdropType.None, true);
-
-                if (!IsWindows11())
-                {
-                    // this.AllowsTransparency = false;
-                    this.Background = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-                }
+                bool isWindows11 = IsWindows11();
+                // this.AllowsTransparency = false;
+                this.Background = new SolidColorBrush(isWindows11 ? Color.FromRgb(255, 255, 255) : Color.FromArgb(240, 255, 255, 255));
 
                 uint windowLong = GetWindowLong(new WindowInteropHelper(this).Handle, GWL_STYLE);
                 windowLong &= ~(uint)0x00080000;
 
-                SetWindowLong(new WindowInteropHelper(this).Handle, GWL_STYLE, windowLong);
-                UnsafeNativeMethods.ApplyWindowCornerPreference(new WindowInteropHelper(this).Handle, WindowCornerPreference.Round);
+                IntPtr handle = new WindowInteropHelper(this).Handle;
+                SetWindowLong(handle, GWL_STYLE, windowLong);
+                UnsafeNativeMethods.ApplyWindowCornerPreference(handle, WindowCornerPreference.Round);
+                UnsafeNativeMethods.ApplyWindowBackdrop(handle, isWindows11 ? BackgroundType.Mica : BackgroundType.Acrylic);
 
                 UpdateCDNSelectorSubtitle.Text = string.Empty;
 
