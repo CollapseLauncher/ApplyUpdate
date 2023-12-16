@@ -421,19 +421,28 @@ namespace ApplyUpdateGUI
             string directoryPath = Path.GetDirectoryName(path);
             string searchValue = GetPathWithoutDriveLetter(directoryPath);
 
-            using (InnoUninstLog innoLog = InnoUninstLog.Load(path, true))
+            Console.WriteLine($"Updating Inno Setup file located at: {path}");
+            try
             {
-                // Always set the log to x64 mode
-                innoLog.Header.IsLog64bit = true;
+                using (InnoUninstLog innoLog = InnoUninstLog.Load(path, true))
+                {
+                    // Always set the log to x64 mode
+                    innoLog.Header.IsLog64bit = true;
 
-                // Clean up the existing file and directory records
-                CleanUpInnoDirOrFilesRecord(innoLog, searchValue);
+                    // Clean up the existing file and directory records
+                    CleanUpInnoDirOrFilesRecord(innoLog, searchValue);
 
-                // Try register the parent path
-                RegisterDirOrFilesRecord(innoLog, directoryPath);
+                    // Try register the parent path
+                    RegisterDirOrFilesRecord(innoLog, directoryPath);
 
-                // Save the Inno Setup log
-                innoLog.Save(path);
+                    // Save the Inno Setup log
+                    innoLog.Save(path);
+                    Console.WriteLine($"Inno Setup file: {path} has been successfully updated!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Inno Setup file: {path} was failed due to an error: {ex}");
             }
         }
 
@@ -450,6 +459,7 @@ namespace ApplyUpdateGUI
             {
                 if (excludeDeleteFile.Any(x => x.IndexOf(fileInfo.FullName, StringComparison.OrdinalIgnoreCase) > -1)) continue;
                 fileInfo.IsReadOnly = false;
+                Console.WriteLine($"Registering Inno Setup record: (DeleteFileRecord){fileInfo.FullName}");
                 innoLog.Records.Add(DeleteFileRecord.Create(fileInfo.FullName));
             }
 
@@ -457,6 +467,7 @@ namespace ApplyUpdateGUI
             {
                 RegisterDirOrFilesRecord(innoLog, subdirectories.FullName);
             }
+            Console.WriteLine($"Registering Inno Setup record: (DeleteDirOrFilesRecord){pathToRegister}");
             innoLog.Records.Add(DeleteDirOrFilesRecord.Create(pathToRegister));
         }
 
@@ -472,10 +483,12 @@ namespace ApplyUpdateGUI
                     case RecordType.DeleteDirOrFiles:
                         isRecordValid = IsInnoRecordContainsPath<DeleteDirOrFilesFlags>(baseRecord, searchValue)
                                      && IsDeleteDirOrFilesFlagsValid((DeleteDirOrFilesRecord)baseRecord);
+                        Console.WriteLine($"Removing outdated Inno Setup record: (DeleteDirOrFilesRecord){((DeleteDirOrFilesRecord)baseRecord).Paths[0]}");
                         break;
                     case RecordType.DeleteFile:
                         isRecordValid = IsInnoRecordContainsPath<DeleteFileFlags>(baseRecord, searchValue)
                                      && IsDeleteFileFlagsValid((DeleteFileRecord)baseRecord);
+                        Console.WriteLine($"Removing outdated Inno Setup record: (DeleteFileRecord){((DeleteFileRecord)baseRecord).Paths[0]}");
                         break;
                 }
                 if (isRecordValid)
@@ -501,7 +514,6 @@ namespace ApplyUpdateGUI
             UpdateCDNSelectorPanel.Visibility = Visibility.Collapsed;
             UpdateCDNRadioButtons.Visibility = Visibility.Visible;
         }
-
 
         private void SpawnError(string message)
         {
