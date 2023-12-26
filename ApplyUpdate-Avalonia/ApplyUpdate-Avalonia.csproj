@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>disable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<AvaloniaResource Include="Assets\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="Hi3Helper.Http\Test\**" />
+		<EmbeddedResource Remove="Hi3Helper.Http\Test\**" />
+		<None Remove="Hi3Helper.Http\Test\**" />
+		<None Remove="publish\**" />
+		<Page Remove="Hi3Helper.Http\Test\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.0.6" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.6" />
+		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.6" />
+		<PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+	</ItemGroup>
+</Project>

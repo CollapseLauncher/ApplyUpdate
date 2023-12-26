@@ -1,33 +1,26 @@
-﻿using Brotli;
-using CollapseLauncher;
-using Hi3Helper.Http;
-using SharpCompress.Archives;
+﻿using Hi3Helper.Http;
 using System;
 using System.Diagnostics;
+using System.Formats.Tar;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 
-namespace ApplyUpdateGUI
+namespace ApplyUpdate
 {
-    internal class UpdateTask
+    public class UpdateTask
     {
         internal enum PathAction { create, delete }
         internal enum PathType { file, directory }
-
-        enum StringAlign
-        {
-            left, center, right
-        }
+        enum StringAlign { left, center, right }
 
         private static bool _isConsoleWindowHasWidth = IsConsoleWindowHasWidth();
         private static int _windowBufferWidth { get => _isConsoleWindowHasWidth ? Console.WindowWidth : 0; }
 
         public static int PreferredCDNIndex = 0;
-        public static string realExecPath = Process.GetCurrentProcess().MainModule.FileName;
-        public static string realExecDir { get => Path.GetDirectoryName(realExecPath); }
+        public static string realExecPath = Process.GetCurrentProcess().MainModule!.FileName;
+        public static string realExecDir { get => Path.GetDirectoryName(realExecPath)!; }
         public static string workingDir { get => realExecDir; }
         public static string execPath = Path.Combine(workingDir, applyExec + ".exe");
         public static string tempDir = Path.Combine(workingDir, "_Temp");
@@ -121,7 +114,7 @@ namespace ApplyUpdateGUI
             }
 
             FileVersionInfo execInfo = FileVersionInfo.GetVersionInfo(switchPath2);
-            string version = execInfo.FileVersion;
+            string version = execInfo.FileVersion!;
 
             string title = $"A previous legacy installation of Collapse v{version} detected!";
             string msg = $"We detected that you have a legacy Collapse v{version} installed on your PC. "
@@ -129,11 +122,15 @@ namespace ApplyUpdateGUI
                 + "Please make sure you don't have any important files inside of the Collapse directory or it will be COMPLETELY WIPED OUT!"
                 + "\r\n\r\nClick \"Yes\" to proceed or \"No\" to cancel.";
 
-            MessageBoxResult result = MessageBox.Show(msg, title, MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result == MessageBoxResult.No) return false;
+            uint msgStyle = 0x00000004u | 0x00000030u | 0x00001000u;
+            int result = PInvoke.MessageBoxExA(IntPtr.Zero, msg, title, msgStyle);
+            // Result:
+            //    7 = No
+            //    6 = Yes
+            if (result == 7) return false;
 
-            result = MessageBox.Show("Click \"Yes\" once again to confirm.", title, MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result == MessageBoxResult.No) return false;
+            result = PInvoke.MessageBoxExA(IntPtr.Zero, "Click \"Yes\" once again to confirm.", title, msgStyle);
+            if (result == 7) return false;
 
             int count = 5;
             while (count > 0)
@@ -231,7 +228,7 @@ namespace ApplyUpdateGUI
                         string print = GetBothAlignedString($"Downloading package: {Math.Round(progress.ProgressPercentage, 2)}% [{SummarizeSizeSimple(progress.Speed)}/s]...", $"[{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}]");
                         Console.Write($"\r{print}");
                     };
-                    await FallbackCDNUtil.DownloadCDNFallbackContent(httpClient, zipPath, (byte)(Environment.ProcessorCount >= 2 ? 2 : Environment.ProcessorCount), packageURL, default);
+                    await FallbackCDNUtil.DownloadCDNFallbackContent(httpClient, zipPath, (byte)(Environment.ProcessorCount >= 4 ? 4 : Environment.ProcessorCount), packageURL, default);
                     Console.WriteLine();
                 }
             }
@@ -239,30 +236,19 @@ namespace ApplyUpdateGUI
 
         internal static async Task ExtractPackage(string packageFile, string outputFolder)
         {
-            using (FileStream fs = new FileStream(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 4 << 10
-#if !DEBUG
-                , FileOptions.DeleteOnClose
-#endif
-                ))
+            using (FileStream fs = new FileStream(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 0, FileOptions.DeleteOnClose))
             using (BrotliStream bs = new BrotliStream(fs, CompressionMode.Decompress))
-            using (MemoryStream ms = new MemoryStream())
             {
-                _propStatus.ActivityStatus = "Copying package stream to memory...";
-                _propStatus.IsProgressIndetermined = true;
-                InvokeStatus();
-                await bs.CopyToAsync(ms);
-                ms.Position = 0;
-
                 int i = 1;
-                using (IArchive archive = ArchiveFactory.Open(ms))
+                using (TarReader reader = new TarReader(bs, true))
                 {
-                    foreach (IArchiveEntry entry in archive.Entries)
+                    while (reader.GetNextEntry() is TarEntry entry)
                     {
-                        _propStatus.ActivityStatus = $"{entry.Key}";
+                        _propStatus.ActivityStatus = $"{entry.Name}";
                         _propStatus.ActivitySubStatus = $"{i} / ?";
                         _propStatus.IsProgressIndetermined = true;
                         InvokeStatus();
-                        Console.Write('\r' + GetBothAlignedString($"Extracting: {entry.Key}...", $"[{i++} / ?]"));
+                        Console.Write('\r' + GetBothAlignedString($"Extracting: {entry.Name}...", $"[{i++} / ?]"));
                         await CreateFileFromStream(outputFolder, entry);
                     }
                 }
@@ -280,7 +266,7 @@ namespace ApplyUpdateGUI
             {
                 string baseName = sourceFile.AsSpan().Slice(offset).ToString();
                 string destPath = Path.Combine(destination, baseName);
-                string destDir = Path.GetDirectoryName(destPath);
+                string destDir = Path.GetDirectoryName(destPath)!;
 
                 _propStatus.ActivityStatus = baseName;
 
@@ -322,15 +308,16 @@ namespace ApplyUpdateGUI
             return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
         }
 
-        private static async Task CreateFileFromStream(string outputDir, IArchiveEntry entry)
+        private static async Task CreateFileFromStream(string outputDir, TarEntry entry)
         {
-            string pathTo = Path.Combine(outputDir, entry.Key);
-            string pathDir = Path.GetDirectoryName(pathTo);
+            string pathTo = Path.Combine(outputDir, entry.Name);
+            string pathDir = Path.GetDirectoryName(pathTo)!;
             TryDoPathAction(pathDir, PathAction.create, PathType.directory);
 
-            if (entry.IsDirectory) return;
+            if (entry.EntryType == TarEntryType.Directory) return;
 
-            await Task.Run(() => entry.WriteToFile(pathTo));
+            await using FileStream fileStream = File.Create(pathTo);
+            await entry.DataStream!.CopyToAsync(fileStream);
         }
 
         private static bool IsExceptedFiles(string path) => excludeDeleteFile.Any(x => path.Contains(x));

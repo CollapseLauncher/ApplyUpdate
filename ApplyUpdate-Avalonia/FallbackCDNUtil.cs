@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CollapseLauncher
+namespace ApplyUpdate
 {
     public struct CDNURLProperty
     {
@@ -18,7 +18,7 @@ namespace CollapseLauncher
 
     public static class FallbackCDNUtil
     {
-        public static List<CDNURLProperty> CDNList => new List<CDNURLProperty>
+        public static List<CDNURLProperty> CDNList = new List<CDNURLProperty>
         {
             new CDNURLProperty
             {
@@ -115,7 +115,7 @@ namespace CollapseLauncher
             try
             {
                 // Subscribe the progress to the adapter
-                httpInstance.DownloadProgress += HttpInstance_DownloadProgressAdapter;
+                httpInstance.DownloadProgress += HttpInstance_DownloadProgressAdapter!;
 
                 // Get the URL Status then return boolean and and URLStatus
                 (bool, string) urlStatus = await TryGetURLStatus(cdnProp, httpInstance, relativeURL, token);
@@ -136,7 +136,7 @@ namespace CollapseLauncher
             // Finally, unsubscribe the progress from the adapter
             finally
             {
-                httpInstance.DownloadProgress -= HttpInstance_DownloadProgressAdapter;
+                httpInstance.DownloadProgress -= HttpInstance_DownloadProgressAdapter!;
             }
         }
 
@@ -145,7 +145,7 @@ namespace CollapseLauncher
             try
             {
                 // Subscribe the progress to the adapter
-                httpInstance.DownloadProgress += HttpInstance_DownloadProgressAdapter;
+                httpInstance.DownloadProgress += HttpInstance_DownloadProgressAdapter!;
 
                 // Get the URL Status then return boolean and and URLStatus
                 (bool, string) urlStatus = await TryGetURLStatus(cdnProp, httpInstance, relativeURL, token);
@@ -173,7 +173,7 @@ namespace CollapseLauncher
             // Finally, unsubscribe the progress from the adapter
             finally
             {
-                httpInstance.DownloadProgress -= HttpInstance_DownloadProgressAdapter;
+                httpInstance.DownloadProgress -= HttpInstance_DownloadProgressAdapter!;
             }
         }
 

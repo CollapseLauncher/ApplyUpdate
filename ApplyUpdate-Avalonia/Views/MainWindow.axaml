@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:ApplyUpdate"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="290"
+		CanResize="False" Width="500" Height="290"
+		WindowStartupLocation="CenterScreen"
+        x:Class="ApplyUpdate.MainWindow"
+        Icon="/Assets/icon.ico"
+		ExtendClientAreaToDecorationsHint="True"
+		ExtendClientAreaChromeHints="PreferSystemChrome"
+        Title="Collapse Launcher ApplyUpdate">
+	<Grid Margin="24">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="90"/>
+			<RowDefinition/>
+		</Grid.RowDefinitions>
+		<StackPanel>
+			<TextBlock Text="We're updating" FontFamily="Segoe UI" FontSize="24" FontWeight="Normal"/>
+			<TextBlock Text="Collapse Launcher" FontFamily="Segoe UI" FontSize="32" FontWeight="Bold"/>
+		</StackPanel>
+		<Grid x:Name="UpdateCDNSelectorPanel" IsVisible="True" VerticalAlignment="Stretch" Grid.Row="1">
+			<StackPanel VerticalAlignment="Center">
+				<TextBlock x:Name="UpdateCDNSelectorTitle" FontFamily="Segoe UI" TextWrapping="Wrap" Text="Select your CDN for update" HorizontalAlignment="Center" FontSize="16" FontWeight="Medium" Margin="0,0,0,0"/>
+				<StackPanel x:Name="UpdateCDNRadioButtons" HorizontalAlignment="Center"
+							Orientation="Horizontal" Margin="0,16">
+					<ComboBox x:Name="UpdateCDNComboBox" MinWidth="150" FontFamily="Segoe UI"/>
+					<ComboBox x:Name="UpdateReleaseSelectorBox" IsVisible="False" Width="108" FontFamily="Segoe UI"
+							  Margin="4,0,0,0" SelectedIndex="0">
+						<ComboBoxItem Content="Stable"/>
+						<ComboBoxItem Content="Preview"/>
+					</ComboBox>
+					<Button Margin="4,-2,0,0" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+						Click="StartUpdateRoutine">
+						<StackPanel Margin="0,1,0,1" Orientation="Horizontal" VerticalAlignment="Center">
+							<TextBlock Text="&#xE118;" FontFamily="Segoe UI Symbol" FontSize="15" VerticalAlignment="Center"/>
+							<!--
+							<SymbolIcon Margin="0,2,0,0" Symbol="ClockArrowDownload24"/>
+							-->
+							<TextBlock Margin="2,0,8,0" Text="Update Now!" FontFamily="Segoe UI" VerticalAlignment="Center"/>
+						</StackPanel>
+					</Button>
+				</StackPanel>
+			</StackPanel>
+			<TextBlock x:Name="UpdateCDNSelectorSubtitle" TextWrapping="Wrap" FontFamily="Segoe UI" Text="Never gonna give you up, never gonna let you down~"
+					   VerticalAlignment="Bottom" HorizontalAlignment="Center" FontSize="12" FontWeight="Normal"/>
+		</Grid>
+		<Grid x:Name="UpdateProgressPanel" IsVisible="False" VerticalAlignment="Stretch" Grid.Row="2">
+			<Grid.RowDefinitions>
+				<RowDefinition/>
+				<RowDefinition Height="90"/>
+			</Grid.RowDefinitions>
+			<StackPanel x:Name="UpdateIndicator">
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition/>
+						<ColumnDefinition/>
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition/>
+						<RowDefinition/>
+					</Grid.RowDefinitions>
+					<TextBlock Text="Update:" FontFamily="Segoe UI"/>
+					<TextBlock Grid.Row="1" FontFamily="Segoe UI">
+						<Run x:Name="UpdateVersionOld" Text="-" FontWeight="Bold"/>
+						<Run Text="to"/>
+						<Run x:Name="UpdateVersionNew" Text="-" FontWeight="Bold"/>
+					</TextBlock>
+					<TextBlock FontFamily="Segoe UI" Text="Channel:" TextAlignment="Right" Grid.Row="0" Grid.Column="2"/>
+					<TextBlock FontFamily="Segoe UI" x:Name="ChannelName" Text="Unknown" TextAlignment="Right" FontWeight="Bold" Grid.Row="1" Grid.Column="2"/>
+				</Grid>
+			</StackPanel>
+			<StackPanel x:Name="UpdateCDNProgressPanel" VerticalAlignment="Bottom" Grid.Row="1">
+				<Grid Margin="0,0,0,16">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition/>
+						<ColumnDefinition/>
+						<ColumnDefinition/>
+					</Grid.ColumnDefinitions>
+					<StackPanel Grid.ColumnSpan="3">
+						<TextBlock FontFamily="Segoe UI" x:Name="Status" Text="Status:" Margin="0,0,0,4"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="ActivityStatus" Text="Idle" Margin="0,0,0,4" TextWrapping="Wrap"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="ActivitySubStatus" Text="- B / - B" FontWeight="Bold"/>
+					</StackPanel>
+					<StackPanel x:Name="ProgressStatus" Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+						<TextBlock FontFamily="Segoe UI" Text="{Binding Value, ElementName=progressBar}" FontWeight="Bold"/>
+						<TextBlock FontFamily="Segoe UI" Text="%"/>
+					</StackPanel>
+					<StackPanel HorizontalAlignment="Right" Grid.Column="2">
+						<TextBlock/>
+						<TextBlock FontFamily="Segoe UI" x:Name="SpeedStatus" Text="- B/s" HorizontalAlignment="Right" Margin="0,0,0,4"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="TimeEstimation" Text="--m--s" HorizontalAlignment="Right" FontWeight="Bold"/>
+					</StackPanel>
+				</Grid>
+				<ProgressBar x:Name="progressBar" Value="0" Maximum="100" IsIndeterminate="True"/>
+			</StackPanel>
+		</Grid>
+	</Grid>
+</Window>
