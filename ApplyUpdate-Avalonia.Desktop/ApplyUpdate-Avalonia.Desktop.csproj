@@ -19,7 +19,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Avalonia.Angle.Windows.Natives" Version="2.1.22087.20231008" />
 	  <PackageReference Include="Avalonia.Skia" Version="11.0.6" />
 	  <PackageReference Include="Avalonia.Win32" Version="11.0.6" />
 	</ItemGroup>
