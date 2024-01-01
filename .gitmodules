@@ -1,0 +1,6 @@
+[submodule "ApplyUpdate-Core/Hi3Helper.Http"]
+	path = ApplyUpdate-Core/Hi3Helper.Http
+	url = https://github.com/CollapseLauncher/Hi3Helper.Http
+[submodule "ApplyUpdate-Core/InnoSetupLogParser"]
+	path = ApplyUpdate-Core/InnoSetupLogParser
+	url = https://github.com/CollapseLauncher/InnoSetupLogParser

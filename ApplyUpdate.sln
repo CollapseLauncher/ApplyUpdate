@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.33927.210
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdate-Avalonia", "ApplyUpdate-Avalonia\ApplyUpdate-Avalonia.csproj", "{12964818-0F31-440E-8F07-9926B77B8B1E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdate-Core", "ApplyUpdate-Core\ApplyUpdate-Core.csproj", "{12964818-0F31-440E-8F07-9926B77B8B1E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdate-Avalonia.Desktop", "ApplyUpdate-Avalonia.Desktop\ApplyUpdate-Avalonia.Desktop.csproj", "{3A566CEC-FB86-49FD-B7A4-E9BE23D15425}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdate-Desktop", "ApplyUpdate-Desktop\ApplyUpdate-Desktop.csproj", "{3A566CEC-FB86-49FD-B7A4-E9BE23D15425}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

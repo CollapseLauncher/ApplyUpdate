@@ -11,7 +11,7 @@
 		ExtendClientAreaToDecorationsHint="True"
 		ExtendClientAreaChromeHints="PreferSystemChrome"
         Title="Collapse Launcher ApplyUpdate">
-	<Grid Margin="24">
+	<Grid Margin="24" x:Name="RootGrid">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="90"/>
 			<RowDefinition/>

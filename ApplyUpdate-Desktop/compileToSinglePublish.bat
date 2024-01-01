@@ -24,7 +24,7 @@ del build\*.pdb
 if not %errorlevel% == 0 goto :ErrorMsg
 
 :: Rename the executable to ApplyUpdate
-move build\ApplyUpdate-Avalonia.Desktop.exe build\ApplyUpdate.exe
+move build\ApplyUpdate-Desktop.exe build\ApplyUpdate.exe
 if not %errorlevel% == 0 goto :ErrorMsg
 
 goto :SuccessMsg

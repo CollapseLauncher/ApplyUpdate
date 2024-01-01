@@ -5,7 +5,6 @@
 if not exist "nativeLib" mkdir nativeLib
 if not exist "nativeLib\libSkiaSharp.lib" goto :RequireLibMsg
 if not exist "nativeLib\libHarfBuzzSharp.lib" goto :RequireLibMsg
-if not exist "nativeLib\upx.exe" goto :RequireUpxMsg
 
 :: Clean-up the solution and restore all NuGet packages
 dotnet clean ..\ --configuration Release
@@ -24,23 +23,11 @@ if not %errorlevel% == 0 goto :ErrorMsg
 del build\*.pdb
 if not %errorlevel% == 0 goto :ErrorMsg
 
-:: Compress executable with UPX (this is used to achieve the smallest size possible)
-nativeLib\upx -f -obuild\ApplyUpdate.exe --lzma --best build\ApplyUpdate-Avalonia.Desktop.exe
-if not %errorlevel% == 0 goto :ErrorMsg
-
-del build\ApplyUpdate-Avalonia.Desktop.exe
+:: Rename the executable
+move build\ApplyUpdate-Desktop.exe build\ApplyUpdate.exe
 if not %errorlevel% == 0 goto :ErrorMsg
 
 goto :SuccessMsg
-
-:RequireUpxMsg
-	echo UPX executable ^(upx.exe^) doesn't exist in the "nativeLib" folder!
-	echo Please download the UPX executable here:
-	echo https://github.com/upx/upx/releases
-	echo.
-	echo Find the download link for "upx-x.x.x-win64.zip" file, then extract
-	echo the .exe file into "nativeLib" folder and re-run this script
-	goto :RESTART
 
 :RequireLibMsg
 	echo libSkiaSharp.lib or libHarfBuzzSharp.lib library doesn't exist in the "nativeLib" folder!

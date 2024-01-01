@@ -39,6 +39,13 @@ public partial class MainWindow : Window
             WindowTransparencyLevel.None
         };
         InitializeComponent();
+        PointerPressed += (obj, args) =>
+        {
+            if (WindowState == WindowState.Normal
+            && args.Pointer.Captured.GetType() == typeof(Avalonia.Controls.Panel))
+                BeginMoveDrag(args);
+        };
+
         UpdateCDNSelectorSubtitle.Text = string.Empty;
         UpdateCDNComboBox.ItemsSource = FallbackCDNUtil.CDNList.Select(x => x.Name).ToList();
         UpdateCDNComboBox.SelectedIndex = FallbackCDNUtil.PreferredCDNIndex;
@@ -452,7 +459,7 @@ public partial class MainWindow : Window
 
     private async void UpdateTask_UpdateStatus(object sender, UpdateStatus e)
     {
-        if (await CheckIfNeedRefreshStopwatchStatus())
+        if (await CheckIfNeedRefreshStopwatch(_refreshStopwatchStatus))
         {
             ActivityStatus.Text = e.ActivityStatus;
             ActivitySubStatus.Text = e.ActivitySubStatus;
@@ -462,7 +469,7 @@ public partial class MainWindow : Window
 
     private async void UpdateTask_UpdateProgress(object sender, UpdateProgress e)
     {
-        if (await CheckIfNeedRefreshStopwatchProgress())
+        if (await CheckIfNeedRefreshStopwatch(_refreshStopwatchProgress))
         {
             progressBar.Value = e.ProgressPercentage;
             SpeedStatus.Text = string.Format("{0}/s", SummarizeSizeSimple(e.Speed));
@@ -472,23 +479,12 @@ public partial class MainWindow : Window
 
     private Stopwatch _refreshStopwatchProgress = Stopwatch.StartNew();
     private Stopwatch _refreshStopwatchStatus = Stopwatch.StartNew();
-    private int _refreshInterval = 66;
-    protected async Task<bool> CheckIfNeedRefreshStopwatchProgress()
+    private int _refreshInterval = 33;
+    protected async ValueTask<bool> CheckIfNeedRefreshStopwatch(Stopwatch sw)
     {
-        if (_refreshStopwatchProgress.ElapsedMilliseconds > _refreshInterval)
+        if (sw.ElapsedMilliseconds > _refreshInterval)
         {
-            _refreshStopwatchProgress.Restart();
-            return true;
-        }
-
-        await Task.Delay(_refreshInterval);
-        return false;
-    }
-    protected async Task<bool> CheckIfNeedRefreshStopwatchStatus()
-    {
-        if (_refreshStopwatchStatus.ElapsedMilliseconds > _refreshInterval)
-        {
-            _refreshStopwatchStatus.Restart();
+            sw.Restart();
             return true;
         }
 
