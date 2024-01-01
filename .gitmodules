@@ -1,6 +1,0 @@
-[submodule "ApplyUpdate-Avalonia/Hi3Helper.Http"]
-	path = ApplyUpdate-Avalonia/Hi3Helper.Http
-	url = https://github.com/CollapseLauncher/Hi3Helper.Http
-[submodule "ApplyUpdate-Avalonia/InnoSetupLogParser"]
-	path = ApplyUpdate-Avalonia/InnoSetupLogParser
-	url = https://github.com/CollapseLauncher/InnoSetupLogParser
