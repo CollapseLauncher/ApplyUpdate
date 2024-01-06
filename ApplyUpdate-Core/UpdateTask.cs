@@ -7,6 +7,9 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 
+using static Hi3Helper.Locale;
+using static Hi3Helper.Logger;
+
 namespace ApplyUpdate
 {
     public class UpdateTask
@@ -76,22 +79,15 @@ namespace ApplyUpdate
             string stampFile = TryGetStampFilePath();
             if (!File.Exists(stampFile))
             {
-                Console.WriteLine($"\"release\" file doesn't exist in \"_Temp\\release\" or current directory");
+                LogWriteLine($"\"release\" file doesn't exist in \"_Temp\\release\" or current directory", Hi3Helper.LogType.Warning);
 
                 return null;
             }
 
             string[] lines = File.ReadAllLines(stampFile);
-            if (lines == null || lines.Length == 0)
+            if (lines == null || lines.Length == 0 || !(lines[0].ToLower() == "stable" || lines[0].ToLower() == "preview"))
             {
-                Console.WriteLine($"Content of the \"release\" stamp file is empty. The content of the file must be \"preview\" or \"stable\"");
-                return null;
-            }
-
-            if (!(lines[0].ToLower() == "stable" || lines[0].ToLower() == "preview"))
-            {
-                Console.WriteLine($"Content of the \"release\" stamp file is not valid. The content of the file must be \"preview\" or \"stable\"");
-
+                LogWriteLine($"Content of the \"release\" stamp file is empty. The content of the file must be \"preview\" or \"stable\"", Hi3Helper.LogType.Warning);
                 return null;
             }
 
@@ -116,11 +112,11 @@ namespace ApplyUpdate
             FileVersionInfo execInfo = FileVersionInfo.GetVersionInfo(switchPath2);
             string version = execInfo.FileVersion!;
 
-            string title = $"A previous legacy installation of Collapse v{version} detected!";
-            string msg = $"We detected that you have a legacy Collapse v{version} installed on your PC. "
-                + "The updater needs to clean-up all the old files inside its directory.\r\n"
-                + "Please make sure you don't have any important files inside of the Collapse directory or it will be COMPLETELY WIPED OUT!"
-                + "\r\n\r\nClick \"Yes\" to proceed or \"No\" to cancel.";
+            string title = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundTitle, version);
+            string msg = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle1, version)
+                + Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle2
+                + Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle3
+                + Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle4;
 
             uint msgStyle = 0x00000004u | 0x00000030u | 0x00001000u;
             int result = PInvoke.MessageBoxExA(IntPtr.Zero, msg, title, msgStyle);
@@ -129,13 +125,13 @@ namespace ApplyUpdate
             //    6 = Yes
             if (result == 7) return false;
 
-            result = PInvoke.MessageBoxExA(IntPtr.Zero, "Click \"Yes\" once again to confirm.", title, msgStyle);
+            result = PInvoke.MessageBoxExA(IntPtr.Zero, Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle5, title, msgStyle);
             if (result == 7) return false;
 
             int count = 5;
             while (count > 0)
             {
-                _propStatus.Status = $"Clean-up process will be started in {count}...";
+                _propStatus.Status = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyCleanupCount, count);
                 InvokeStatus();
                 Console.Write('\r' + _propStatus.Status);
                 await Task.Delay(1000);
@@ -151,7 +147,7 @@ namespace ApplyUpdate
                 {
                     try
                     {
-                        _propStatus.ActivityStatus = $"Deleting: {path.Substring(offset)}...";
+                        _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, path.Substring(offset));
                         InvokeStatus();
                         Console.Write('\r' + GetBothAlignedString($"Deleting folder: {path.Substring(offset)}...", $"[{i++} / ?]"));
                         TryDoPathAction(path, PathAction.delete, PathType.directory);
@@ -159,7 +155,7 @@ namespace ApplyUpdate
                     catch (Exception ex)
                     {
                         Console.WriteLine();
-                        Console.WriteLine($"Error!\r\n{ex}");
+                        LogWriteLine($"Error!\r\n{ex}", Hi3Helper.LogType.Error);
                     }
                 }
             }
@@ -170,7 +166,7 @@ namespace ApplyUpdate
                 {
                     try
                     {
-                        _propStatus.ActivityStatus = $"Deleting: {path.Substring(offset)}...";
+                        _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, path.Substring(offset));
                         InvokeStatus();
                         Console.Write('\r' + GetBothAlignedString($"Deleting file: {path.Substring(offset)}...", $"[{i++} / ?]"));
                         TryDoPathAction(path, PathAction.delete, PathType.file);
@@ -178,7 +174,7 @@ namespace ApplyUpdate
                     catch (Exception ex)
                     {
                         Console.WriteLine();
-                        Console.WriteLine($"Error!\r\n{ex}");
+                        LogWriteLine($"Error!\r\n{ex}", Hi3Helper.LogType.Error);
                     }
                 }
             }
@@ -188,7 +184,7 @@ namespace ApplyUpdate
             {
                 try
                 {
-                    _propStatus.ActivityStatus = $"Deleting: {applyUpdateConfig.Substring(offset)}...";
+                    _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, applyUpdateConfig.Substring(offset));
                     InvokeStatus();
                     Console.Write('\r' + GetBothAlignedString($"Deleting file: {applyUpdateConfig.Substring(offset)}...", $"[{i++} / ?]"));
                     TryDoPathAction(applyUpdateConfig, PathAction.delete, PathType.file);
@@ -196,7 +192,7 @@ namespace ApplyUpdate
                 catch (Exception ex)
                 {
                     Console.WriteLine();
-                    Console.WriteLine($"Error!\r\n{ex}");
+                    LogWriteLine($"Error!\r\n{ex}", Hi3Helper.LogType.Error);
                 }
             }
             Console.WriteLine();
@@ -211,7 +207,7 @@ namespace ApplyUpdate
                 string packageURL = FallbackCDNUtil.CombineURLFromString("squirrel", stamp, "latest");
                 using (Http httpClient = new Http(true))
                 {
-                    _propStatus.ActivityStatus = "Downloading package";
+                    _propStatus.ActivityStatus = Lang._UpdatePage.ApplyUpdateTaskDownloadingPkgTitle;
                     InvokeStatus();
                     FallbackCDNUtil.DownloadProgress += (_, progress) =>
                     {
@@ -289,9 +285,9 @@ namespace ApplyUpdate
                         File.Copy(sourceFile, destPath, true);
                         Console.WriteLine();
                     }
-                    catch
+                    catch (Exception ex1)
                     {
-                        Console.WriteLine($"still Failed!\r\n{ex}");
+                        LogWriteLine($"still Failed!\r\n{ex1}", Hi3Helper.LogType.Error);
                         throw;
                     }
                     return;
@@ -416,38 +412,6 @@ namespace ApplyUpdate
                 spaceWidth = _windowBufferWidth - 1 - (leftString.Length + rightString.Length);
             }
             return leftString + new string(' ', Math.Max(spaceWidth, 0)) + rightString;
-        }
-
-        private static void PrintAlignedString(string inputString, StringAlign align, bool isNewLine = false, bool isFlushCurrentLine = false)
-        {
-            int spaceLength = 0;
-            switch (align)
-            {
-                case StringAlign.right:
-                    spaceLength = _windowBufferWidth - inputString.Length;
-                    break;
-                case StringAlign.center:
-                    spaceLength = (int)(((double)_windowBufferWidth / 2) - ((double)inputString.Length / 2));
-                    break;
-            }
-
-            if (isFlushCurrentLine)
-            {
-                Console.Write('\r' + new string(' ', spaceLength) + '\r');
-            }
-            else
-            {
-                if (_isConsoleWindowHasWidth) Console.CursorLeft = spaceLength;
-            }
-
-            if (isNewLine)
-            {
-                Console.WriteLine(inputString);
-            }
-            else
-            {
-                Console.Write(inputString);
-            }
         }
         #endregion
 

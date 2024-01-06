@@ -1,9 +1,11 @@
 ﻿using Avalonia;
-using Avalonia.Rendering;
-// using Avalonia.ReactiveUI;
+using Hi3Helper;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Text;
+
+using static Hi3Helper.Logger;
 
 namespace ApplyUpdate;
 
@@ -16,6 +18,9 @@ class Program
     public static void Main(string[] args)
     {
         // PInvoke.AllocateConsole();
+        Logger._log = new LoggerConsole("", Encoding.Unicode);
+        Console.OutputEncoding = Encoding.Unicode;
+        Console.Title = "Collapse Launcher ApplyUpdate Console";
         if (args.Length != 0 && args[0].ToLower() == "compress")
         {
 #if !DEBUG
@@ -27,7 +32,7 @@ class Program
 
         if (Directory.GetCurrentDirectory().Trim('\\') != UpdateTask.realExecDir.Trim('\\'))
         {
-            Console.WriteLine($"Moving to the right working directory ({UpdateTask.realExecDir})...");
+            LogWriteLine($"Moving to the right working directory ({UpdateTask.realExecDir})...");
             Directory.SetCurrentDirectory(UpdateTask.realExecDir);
         }
 
@@ -55,21 +60,21 @@ class Program
     {
         if (args.Length != 3)
         {
-            Console.WriteLine("Please define Input and Output file path");
+            LogWriteLine("Please define Input and Output file path!", LogType.Error);
             return 1;
         }
 
         if (!File.Exists(args[1]))
         {
-            Console.WriteLine("Input file doesn't exist!");
-            Console.WriteLine("Path: " + args[1]);
+            LogWriteLine("Input file doesn't exist!", LogType.Error);
+            LogWriteLine("Path: " + args[1], LogType.Error);
             return 2;
         }
 
         if (!Directory.Exists(Path.GetDirectoryName(args[2])))
         {
-            Console.WriteLine("Output directory from given path doesn't exist!");
-            Console.WriteLine("Path: " + args[2]);
+            LogWriteLine("Output directory from given path doesn't exist!", LogType.Error);
+            LogWriteLine("Path: " + args[2], LogType.Error);
             return 2;
         }
 
@@ -77,10 +82,10 @@ class Program
         using (FileStream fso = new FileStream(args[2], FileMode.Create, FileAccess.Write))
         using (BrotliStream bso = new BrotliStream(fso, CompressionMode.Compress, true))
         {
-            Console.WriteLine("Input path: " + args[1]);
-            Console.WriteLine("Output path: " + args[2]);
+            LogWriteLine("Input path: " + args[1]);
+            LogWriteLine("Output path: " + args[2]);
             byte[] buffer = new byte[4 << 14];
-            Console.WriteLine("Input filesize: " + fsi.Length + " bytes");
+            LogWriteLine("Input filesize: " + fsi.Length + " bytes");
 
             int read = 0;
             long curRead = 0;
@@ -92,8 +97,8 @@ class Program
                 bso.Write(buffer, 0, read);
             }
             Console.WriteLine(" Completed!");
-            Console.WriteLine("Output filesize: " + fso.Length + " bytes");
-            Console.WriteLine($"Compression ratio: {Math.Round((double)fso.Length / fsi.Length * 100, 4)}%");
+            LogWriteLine("Output filesize: " + fso.Length + " bytes", LogType.Error);
+            LogWriteLine($"Compression ratio: {Math.Round((double)fso.Length / fsi.Length * 100, 4)}%", LogType.Error);
         }
 
         return 0;

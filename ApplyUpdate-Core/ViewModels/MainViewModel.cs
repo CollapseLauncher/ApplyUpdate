@@ -1,15 +1,8 @@
-﻿/*
-using System.Collections.Generic;
+﻿using static Hi3Helper.Locale;
 
 namespace ApplyUpdate;
 
 public class MainViewModel : ViewModelBase
 {
-    public List<CDNURLProperty> CDNList => FallbackCDNUtil.CDNList;
-    public int PreferredCDNIndex
-    {
-        get => FallbackCDNUtil.PreferredCDNIndex;
-        set => FallbackCDNUtil.PreferredCDNIndex = value;
-    }
+    public LocalizationParams Locale { get => Lang; }
 }
-*/

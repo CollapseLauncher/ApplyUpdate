@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using static Hi3Helper.Logger;
+
 namespace ApplyUpdate
 {
     public struct CDNURLProperty
@@ -130,7 +132,7 @@ namespace ApplyUpdate
             // Handle the error and log it. If fails, then log it and return false
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed while getting CDN content from: {cdnProp.Name} (prefix: {cdnProp.URLPrefix}) (relPath: {relativeURL})\r\n{ex}");
+                LogWriteLine($"Failed while getting CDN content from: {cdnProp.Name} (prefix: {cdnProp.URLPrefix}) (relPath: {relativeURL})\r\n{ex}", Hi3Helper.LogType.Error);
                 return false;
             }
             // Finally, unsubscribe the progress from the adapter
@@ -167,7 +169,7 @@ namespace ApplyUpdate
             // Handle the error and log it. If fails, then log it and return false
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed while getting CDN content from: {cdnProp.Name} (prefix: {cdnProp.URLPrefix}) (relPath: {relativeURL})\r\n{ex}");
+                LogWriteLine($"Failed while getting CDN content from: {cdnProp.Name} (prefix: {cdnProp.URLPrefix}) (relPath: {relativeURL})\r\n{ex}", Hi3Helper.LogType.Error);
                 return false;
             }
             // Finally, unsubscribe the progress from the adapter
@@ -182,7 +184,7 @@ namespace ApplyUpdate
             // Concat the URL Prefix and Relative URL
             string absoluteURL = CombineURLFromString(cdnProp.URLPrefix, relativeURL);
 
-            Console.WriteLine($"Getting CDN Content from: {cdnProp.Name} at URL: {absoluteURL}");
+            LogWriteLine($"Getting CDN Content from: {cdnProp.Name} at URL: {absoluteURL}");
 
             // Try check the status of the URL
             (int, bool) returnCode = await httpInstance.GetURLStatus(absoluteURL, token);
@@ -190,7 +192,7 @@ namespace ApplyUpdate
             // If it's not a successful code, then return false
             if (!returnCode.Item2)
             {
-                Console.WriteLine($"CDN content from: {cdnProp.Name} (prefix: {cdnProp.URLPrefix}) (relPath: {relativeURL}) has returned error code: {returnCode.Item1}");
+                LogWriteLine($"CDN content from: {cdnProp.Name} (prefix: {cdnProp.URLPrefix}) (relPath: {relativeURL}) has returned error code: {returnCode.Item1}", Hi3Helper.LogType.Warning);
                 return (false, absoluteURL);
             }
 

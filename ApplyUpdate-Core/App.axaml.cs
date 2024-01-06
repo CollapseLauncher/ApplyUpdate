@@ -2,6 +2,9 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Hi3Helper;
+using Hi3Helper.Data;
+using System.IO;
 #if !DEBUG
 using System;
 #endif
@@ -12,6 +15,9 @@ public partial class App : Application
 {
     public override void Initialize()
     {
+        string localeName = GetCurrentLanguageFromCollapseConfig();
+        Locale.InitializeLocale();
+        Locale.LoadLocale(localeName);
         AvaloniaXamlLoader.Load(this);
     }
 
@@ -20,7 +26,10 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime window)
         {
             PInvoke.m_window = window;
-            window.MainWindow = new MainWindow();
+            window.MainWindow = new MainWindow()
+            {
+                DataContext = new MainViewModel()
+            };
             window.Exit += (a, b) =>
             {
 #if !DEBUG
@@ -31,5 +40,24 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    public string GetCurrentLanguageFromCollapseConfig()
+    {
+        const string defaultLocale = "en-us";
+        string configFile = Statics.AppConfigFile;
+
+        string sectionName = "app";
+        string keyName = "AppLanguage";
+        if (File.Exists(configFile))
+        {
+            IniFile iniFile = new IniFile();
+            iniFile.Load(configFile);
+
+            if (!iniFile.ContainsSection(sectionName)) return defaultLocale;
+            return iniFile[sectionName].ContainsKey(keyName) ? iniFile[sectionName][keyName].ToString() : defaultLocale;
+        }
+
+        return defaultLocale;
     }
 }

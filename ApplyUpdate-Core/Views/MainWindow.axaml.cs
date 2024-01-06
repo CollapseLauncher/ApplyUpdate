@@ -16,6 +16,8 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using static ApplyUpdate.UpdateTask;
+using static Hi3Helper.Locale;
+using static Hi3Helper.Logger;
 
 namespace ApplyUpdate;
 
@@ -42,7 +44,7 @@ public partial class MainWindow : Window
         PointerPressed += (obj, args) =>
         {
             if (WindowState == WindowState.Normal
-            && args.Pointer.Captured.GetType() == typeof(Avalonia.Controls.Panel))
+            && args.Pointer.Captured.GetType() == typeof(Panel))
                 BeginMoveDrag(args);
         };
 
@@ -69,8 +71,8 @@ public partial class MainWindow : Window
 
         while (IsCollapseRunning())
         {
-            UpdateCDNSelectorTitle.Text = "Please close Collapse before applying the update!";
-            UpdateCDNSelectorSubtitle.Text = "Waiting for Collapse to close...";
+            UpdateCDNSelectorTitle.Text = Lang._UpdatePage.ApplyUpdateErrCollapseRunTitle;
+            UpdateCDNSelectorSubtitle.Text = Lang._UpdatePage.ApplyUpdateErrCollapseRunSubtitle;
             UpdateCDNRadioButtons.IsEnabled = false;
             await Task.Delay(100);
         }
@@ -85,8 +87,8 @@ public partial class MainWindow : Window
             if (stamp == null)
             {
                 UpdateCDNRadioButtons.IsVisible = false;
-                UpdateCDNSelectorTitle.Text = "ERROR:\r\n\"release\" file doesn't have \"stable\" or \"preview\" string in it";
-                UpdateCDNSelectorSubtitle.Text = "Please check your \"release\" file and try again.";
+                UpdateCDNSelectorTitle.Text = Lang._UpdatePage.ApplyUpdateErrReleaseFileNotFoundTitle;
+                UpdateCDNSelectorSubtitle.Text = Lang._UpdatePage.ApplyUpdateErrReleaseFileNotFoundSubtitle;
                 return null;
             }
         }
@@ -103,7 +105,7 @@ public partial class MainWindow : Window
     private void UpdateCDNComboBoxesCancelCountdown(object sender, PointerEventArgs e)
     {
         CountDownToken?.Cancel();
-        UpdateCDNSelectorSubtitle.Text = "Select the CDN options and click \"Update Now!\" to start the update!";
+        UpdateCDNSelectorSubtitle.Text = string.Format(Lang._UpdatePage.ApplyUpdateCDNSelectorSubtitle, Lang._UpdatePage.ApplyUpdateUpdateNowBtn);
     }
 
     private async void RunCountdownTask()
@@ -112,7 +114,6 @@ public partial class MainWindow : Window
         UpdateCDNComboBox.PointerEntered += UpdateCDNComboBoxesCancelCountdown;
         UpdateReleaseSelectorBox.PointerEntered += UpdateCDNComboBoxesCancelCountdown;
         int countdown = 5;
-        const string CDNSelectorSubtitle = "The CDN will be automatically selected in: {0}";
 
         string releaseFile = TryGetStampFilePath();
         if (!(IsStampFromFile = File.Exists(releaseFile)))
@@ -127,7 +128,7 @@ public partial class MainWindow : Window
             {
                 if (CountDownToken.Token.IsCancellationRequested) return;
 
-                UpdateCDNSelectorSubtitle.Text = string.Format(CDNSelectorSubtitle, countdown--);
+                UpdateCDNSelectorSubtitle.Text = string.Format(Lang._UpdatePage.ApplyUpdateCDNSelectorSubtitleCount, countdown--);
                 await Task.Delay(1000, CountDownToken.Token);
             }
         }
@@ -167,9 +168,9 @@ public partial class MainWindow : Window
 
     private async Task InnerUpdateRoutine()
     {
-        Console.Write("Getting Collapse release channel information... ");
+        LogWriteLine("Getting Collapse release channel information... ");
         if ((Stamp = await RunPrecheckTask()) == null) return;
-        Console.WriteLine($"Found! (using: {Stamp} channel)");
+        LogWriteLine($"Release channel information is found! (using: {Stamp} channel)");
 
         EventProgress += UpdateTask_UpdateProgress!;
         EventStatus += UpdateTask_UpdateStatus!;
@@ -183,7 +184,7 @@ public partial class MainWindow : Window
             GameVersion newVersion = new GameVersion(metadataProp.ver);
             GameVersion? oldVersion = GetOldVersion();
 
-            UpdateVersionOld.Text = oldVersion.HasValue ? oldVersion.Value.VersionString : "none";
+            UpdateVersionOld.Text = oldVersion.HasValue ? oldVersion.Value.VersionString : Lang._UpdatePage.ApplyUpdateMiscNone;
             UpdateVersionNew.Text = newVersion.VersionString;
             ChannelName.Text = char.ToUpper(Stamp[0]) + Stamp.Substring(1);
 
@@ -193,7 +194,7 @@ public partial class MainWindow : Window
             TryDoPathAction(tempDir, PathAction.create, PathType.directory);
             await DownloadPackage(Stamp);
 
-            Status.Text = "Extracting package:";
+            Status.Text = Lang._UpdatePage.ApplyUpdateTaskExtractingPkgTitle;
 
             await ExtractPackage(zipPath, zipExtractPath);
 
@@ -202,7 +203,7 @@ public partial class MainWindow : Window
                 // Remove old folders
                 try
                 {
-                    Status.Text = "Removing old package:";
+                    Status.Text = Lang._UpdatePage.ApplyUpdateTaskRemoveOldPkgTitle;
                     foreach (string oldPath in Directory.EnumerateDirectories(workingDir, "app-*", SearchOption.TopDirectoryOnly))
                     {
                         ActivityStatus.Text = Path.GetFileName(oldPath);
@@ -215,14 +216,14 @@ public partial class MainWindow : Window
                 catch (Exception ex)
                 {
                     SpawnError($"ERROR:\r\nFailed while removing old folder! Retrying...\r\n{ex.Message}");
-                    Console.WriteLine("Retrying...");
+                    LogWriteLine("Retrying...", Hi3Helper.LogType.Warning);
                     Thread.Sleep(1000);
 
                     ReshowProgressPanel();
                 }
             }
 
-            Status.Text = "Moving extracted files:";
+            Status.Text = Lang._UpdatePage.ApplyUpdateTaskMovingExtractFileTitle;
 
             // Move the file
             MoveExtractedPackage(zipExtractPath, workingDir);
@@ -234,7 +235,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed while deleting temporary folder: tempDir. Skipping!\r\n{ex}");
+                LogWriteLine($"Failed while deleting temporary folder: tempDir. Skipping!\r\n{ex}", Hi3Helper.LogType.Error);
                 throw;
             }
 
@@ -245,14 +246,14 @@ public partial class MainWindow : Window
                 await Task.Run(() => UpdateInnoSetupLog(innoSetupLogPath));
             }
 
-            Status.Text = $"Launcher has been updated to: {newVersion.VersionString}!";
+            Status.Text = string.Format(Lang._UpdatePage.ApplyUpdateTaskLauncherUpdatedTitle, newVersion.VersionString);
 
             int count = 5;
             // Launch Collapse
-            Console.WriteLine($"Calling Launcher: {launcherPath}...");
+            LogWriteLine($"Calling Launcher: {launcherPath}...");
             while (count > 0)
             {
-                ActivityStatus.Text = $"Launching Collapse in {count}...";
+                ActivityStatus.Text = string.Format(Lang._UpdatePage.ApplyUpdateTaskLauncherUpdatedSubtitle, count);
                 ActivitySubStatus.Text = $"- / -";
                 progressBar.Value = 100d;
                 progressBar.IsIndeterminate = false;
@@ -276,8 +277,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            SpawnError($"ERROR:\r\nError occured while applying update!\r\n{ex.Message}");
-            Console.WriteLine($"\r\nError occured while applying update!\r\n{ex}");
+            SpawnError(string.Format(Lang._UpdatePage.ApplyUpdateTaskError, ex.Message));
+            LogWriteLine($"\r\nError occurred while applying update!\r\n{ex}", Hi3Helper.LogType.Error);
         }
         finally
         {
@@ -291,7 +292,7 @@ public partial class MainWindow : Window
         string directoryPath = Path.GetDirectoryName(path)!;
         string searchValue = GetPathWithoutDriveLetter(directoryPath);
 
-        Console.WriteLine($"Updating Inno Setup file located at: {path}");
+        LogWriteLine($"Updating Inno Setup file located at: {path}");
         try
         {
             using (InnoUninstLog innoLog = InnoUninstLog.Load(path, true))
@@ -307,12 +308,12 @@ public partial class MainWindow : Window
 
                 // Save the Inno Setup log
                 innoLog.Save(path);
-                Console.WriteLine($"Inno Setup file: {path} has been successfully updated!");
+                LogWriteLine($"Inno Setup file: {path} has been successfully updated!");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Inno Setup file: {path} was failed due to an error: {ex}");
+            LogWriteLine($"Inno Setup file: {path} was failed due to an error: {ex}", Hi3Helper.LogType.Error);
         }
     }
 
@@ -329,7 +330,7 @@ public partial class MainWindow : Window
         {
             if (excludeDeleteFile.Any(x => x.IndexOf(fileInfo.FullName, StringComparison.OrdinalIgnoreCase) > -1)) continue;
             fileInfo.IsReadOnly = false;
-            Console.WriteLine($"Registering Inno Setup record: (DeleteFileRecord){fileInfo.FullName}");
+            LogWriteLine($"Registering Inno Setup record: (DeleteFileRecord){fileInfo.FullName}");
             innoLog.Records.Add(DeleteFileRecord.Create(fileInfo.FullName));
         }
 
@@ -337,7 +338,7 @@ public partial class MainWindow : Window
         {
             RegisterDirOrFilesRecord(innoLog, subdirectories.FullName);
         }
-        Console.WriteLine($"Registering Inno Setup record: (DeleteDirOrFilesRecord){pathToRegister}");
+        LogWriteLine($"Registering Inno Setup record: (DeleteDirOrFilesRecord){pathToRegister}");
         innoLog.Records.Add(DeleteDirOrFilesRecord.Create(pathToRegister));
     }
 
@@ -353,12 +354,12 @@ public partial class MainWindow : Window
                 case RecordType.DeleteDirOrFiles:
                     isRecordValid = IsInnoRecordContainsPath<DeleteDirOrFilesFlags>(baseRecord, searchValue)
                                  && IsDeleteDirOrFilesFlagsValid((DeleteDirOrFilesRecord)baseRecord);
-                    Console.WriteLine($"Removing outdated Inno Setup record: (DeleteDirOrFilesRecord){((DeleteDirOrFilesRecord)baseRecord).Paths[0]}");
+                    LogWriteLine($"Removing outdated Inno Setup record: (DeleteDirOrFilesRecord){((DeleteDirOrFilesRecord)baseRecord).Paths[0]}");
                     break;
                 case RecordType.DeleteFile:
                     isRecordValid = IsInnoRecordContainsPath<DeleteFileFlags>(baseRecord, searchValue)
                                  && IsDeleteFileFlagsValid((DeleteFileRecord)baseRecord);
-                    Console.WriteLine($"Removing outdated Inno Setup record: (DeleteFileRecord){((DeleteFileRecord)baseRecord).Paths[0]}");
+                    LogWriteLine($"Removing outdated Inno Setup record: (DeleteFileRecord){((DeleteFileRecord)baseRecord).Paths[0]}");
                     break;
             }
             if (isRecordValid)
@@ -408,7 +409,7 @@ public partial class MainWindow : Window
 
                 if (manyOfDots > 4)
                 {
-                    Console.WriteLine($"Failed to parse version from path: {x} due to many separator characters in the path. Returning default value!");
+                    LogWriteLine($"Failed to parse version from path: {x} due to many separator characters in the path. Returning default value!", Hi3Helper.LogType.Warning);
                     return new GameVersion(new int[4] { 0, 0, 0, 0 }).ToVersion();
                 }
 
@@ -420,7 +421,7 @@ public partial class MainWindow : Window
                 {
                     if (!int.TryParse(trimmedPath[ranges[i]], null, out versionBuffer[i]))
                     {
-                        Console.WriteLine($"Failed to parse version from path: {x} due to invalid number while reading value: \"{trimmedPath[ranges[i]].ToString()}\". Returning default value!");
+                        LogWriteLine($"Failed to parse version from path: {x} due to invalid number while reading value: \"{trimmedPath[ranges[i]].ToString()}\". Returning default value!", Hi3Helper.LogType.Warning);
                         return new GameVersion(new int[4] { 0, 0, 0, 0 }).ToVersion();
                     }
                 }
@@ -472,8 +473,8 @@ public partial class MainWindow : Window
         if (await CheckIfNeedRefreshStopwatch(_refreshStopwatchProgress))
         {
             progressBar.Value = e.ProgressPercentage;
-            SpeedStatus.Text = string.Format("{0}/s", SummarizeSizeSimple(e.Speed));
-            TimeEstimation.Text = string.Format("{0:%h}h{0:%m}m{0:%s}s left", e.TimeLeft);
+            SpeedStatus.Text = string.Format(Lang._UpdatePage.ApplyUpdateDownloadSpeed, SummarizeSizeSimple(e.Speed));
+            TimeEstimation.Text = string.Format(Lang._UpdatePage.ApplyUpdateDownloadTimeEst, e.TimeLeft);
         }
     }
 
