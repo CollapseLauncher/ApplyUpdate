@@ -67,7 +67,7 @@
 					<TextBlock x:Name="UpdateVersionTitle" FontFamily="Segoe UI"/>
 					<TextBlock Grid.Row="1" FontFamily="Segoe UI">
 						<Run x:Name="UpdateVersionOld" Text="-" FontWeight="Bold"/>
-						<Run Text="to"/>
+						<Run x:Name="UpdateVersionSeparator"/>
 						<Run x:Name="UpdateVersionNew" Text="-" FontWeight="Bold"/>
 					</TextBlock>
 					<TextBlock FontFamily="Segoe UI" x:Name="ChannelTitle" TextAlignment="Right" Grid.Row="0" Grid.Column="2"/>
