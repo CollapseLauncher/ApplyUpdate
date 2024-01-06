@@ -27,9 +27,12 @@ public partial class App : Application
         {
             PInvoke.m_window = window;
             window.MainWindow = new MainWindow()
+            /*
             {
                 DataContext = new MainViewModel()
-            };
+            }
+            */
+            ;
             window.Exit += (a, b) =>
             {
 #if !DEBUG

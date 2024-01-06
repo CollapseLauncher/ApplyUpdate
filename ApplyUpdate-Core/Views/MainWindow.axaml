@@ -17,13 +17,13 @@
 			<RowDefinition/>
 		</Grid.RowDefinitions>
 		<StackPanel>
-			<TextBlock Text="{Binding Locale._UpdatePage.ApplyUpdateTitle1}" FontFamily="Segoe UI" FontSize="24" FontWeight="Normal"/>
-			<TextBlock Text="{Binding Locale._UpdatePage.ApplyUpdateTitle2}" FontFamily="Segoe UI" FontSize="32" FontWeight="Bold"/>
+			<TextBlock x:Name="UpdateWindowTitle" FontFamily="Segoe UI" FontSize="24" FontWeight="Normal"/>
+			<TextBlock x:Name="UpdateWindowSubtitle" FontFamily="Segoe UI" FontSize="32" FontWeight="Bold"/>
 		</StackPanel>
 		<Grid x:Name="UpdateCDNSelectorPanel" IsVisible="True" VerticalAlignment="Stretch" Grid.Row="1">
 			<StackPanel VerticalAlignment="Center">
 				<TextBlock x:Name="UpdateCDNSelectorTitle" FontFamily="Segoe UI"
-						   TextWrapping="Wrap" Text="{Binding Locale._UpdatePage.ApplyUpdateCDNSelectorTitle}"
+						   TextWrapping="Wrap"
 						   HorizontalAlignment="Center" FontSize="16"
 						   FontWeight="Medium" Margin="0,0,0,0"/>
 				<StackPanel x:Name="UpdateCDNRadioButtons" HorizontalAlignment="Center"
@@ -41,7 +41,7 @@
 							<!--
 							<SymbolIcon Margin="0,2,0,0" Symbol="ClockArrowDownload24"/>
 							-->
-							<TextBlock Margin="2,0,8,0" Text="{Binding Locale._UpdatePage.ApplyUpdateUpdateNowBtn}" FontFamily="Segoe UI" VerticalAlignment="Center"/>
+							<TextBlock x:Name="UpdateNowBtnText" Margin="2,0,8,0" FontFamily="Segoe UI" VerticalAlignment="Center"/>
 						</StackPanel>
 					</Button>
 				</StackPanel>
@@ -64,14 +64,14 @@
 						<RowDefinition/>
 						<RowDefinition/>
 					</Grid.RowDefinitions>
-					<TextBlock Text="Update:" FontFamily="Segoe UI"/>
+					<TextBlock x:Name="UpdateVersionTitle" FontFamily="Segoe UI"/>
 					<TextBlock Grid.Row="1" FontFamily="Segoe UI">
 						<Run x:Name="UpdateVersionOld" Text="-" FontWeight="Bold"/>
 						<Run Text="to"/>
 						<Run x:Name="UpdateVersionNew" Text="-" FontWeight="Bold"/>
 					</TextBlock>
-					<TextBlock FontFamily="Segoe UI" Text="{Binding Locale._UpdatePage.ApplyUpdateUpdateChannelTitle}" TextAlignment="Right" Grid.Row="0" Grid.Column="2"/>
-					<TextBlock FontFamily="Segoe UI" x:Name="ChannelName" Text="{Binding Locale._UpdatePage.ApplyUpdateUpdateChannelSubtitlePlaceholder}" TextAlignment="Right" FontWeight="Bold" Grid.Row="1" Grid.Column="2"/>
+					<TextBlock FontFamily="Segoe UI" x:Name="ChannelTitle" TextAlignment="Right" Grid.Row="0" Grid.Column="2"/>
+					<TextBlock FontFamily="Segoe UI" x:Name="ChannelName" TextAlignment="Right" FontWeight="Bold" Grid.Row="1" Grid.Column="2"/>
 				</Grid>
 			</StackPanel>
 			<StackPanel x:Name="UpdateCDNProgressPanel" VerticalAlignment="Bottom" Grid.Row="1">
@@ -82,9 +82,9 @@
 						<ColumnDefinition/>
 					</Grid.ColumnDefinitions>
 					<StackPanel Grid.ColumnSpan="3">
-						<TextBlock FontFamily="Segoe UI" x:Name="Status" Text="{Binding Locale._UpdatePage.ApplyUpdateUpdateStatusTitle}" Margin="0,0,0,4"/>
-						<TextBlock FontFamily="Segoe UI" x:Name="ActivityStatus" Text="{Binding Locale._UpdatePage.ApplyUpdateMiscIdle}" Margin="0,0,0,4" TextWrapping="Wrap"/>
-						<TextBlock FontFamily="Segoe UI" x:Name="ActivitySubStatus" Text="{Binding Locale._UpdatePage.ApplyUpdateDownloadSizePlaceholder}" FontWeight="Bold"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="Status" Margin="0,0,0,4"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="ActivityStatus" Margin="0,0,0,4" TextWrapping="Wrap"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="ActivitySubStatus" FontWeight="Bold"/>
 					</StackPanel>
 					<StackPanel x:Name="ProgressStatus" Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom">
 						<TextBlock FontFamily="Segoe UI" Text="{Binding Value, ElementName=progressBar}" FontWeight="Bold"/>
@@ -92,8 +92,8 @@
 					</StackPanel>
 					<StackPanel HorizontalAlignment="Right" Grid.Column="2">
 						<TextBlock/>
-						<TextBlock FontFamily="Segoe UI" x:Name="SpeedStatus" Text="{Binding Locale._UpdatePage.ApplyUpdateDownloadSpeedPlaceholder}" HorizontalAlignment="Right" Margin="0,0,0,4"/>
-						<TextBlock FontFamily="Segoe UI" x:Name="TimeEstimation" Text="{Binding Locale._UpdatePage.ApplyUpdateDownloadTimeEstPlaceholder}" HorizontalAlignment="Right" FontWeight="Bold"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="SpeedStatus" HorizontalAlignment="Right" Margin="0,0,0,4"/>
+						<TextBlock FontFamily="Segoe UI" x:Name="TimeEstimation" HorizontalAlignment="Right" FontWeight="Bold"/>
 					</StackPanel>
 				</Grid>
 				<ProgressBar x:Name="progressBar" Value="0" Maximum="100" IsIndeterminate="True"/>

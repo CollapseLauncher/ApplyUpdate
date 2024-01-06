@@ -52,7 +52,24 @@ public partial class MainWindow : Window
         UpdateCDNComboBox.ItemsSource = FallbackCDNUtil.CDNList.Select(x => x.Name).ToList();
         UpdateCDNComboBox.SelectedIndex = FallbackCDNUtil.PreferredCDNIndex;
         UpdateCDNComboBox.SelectionChanged += UpdateCDNComboBox_SelectionChanged;
+        InitializeTexts();
         RunCountdownTask();
+    }
+
+    private void InitializeTexts()
+    {
+        UpdateWindowTitle.Text = Lang._UpdatePage.ApplyUpdateTitle1;
+        UpdateWindowSubtitle.Text = Lang._UpdatePage.ApplyUpdateTitle2;
+        UpdateCDNSelectorTitle.Text = Lang._UpdatePage.ApplyUpdateCDNSelectorTitle;
+        UpdateNowBtnText.Text = Lang._UpdatePage.ApplyUpdateUpdateNowBtn;
+        UpdateVersionTitle.Text = Lang._UpdatePage.ApplyUpdateUpdateVersionTitle;
+        ChannelTitle.Text = Lang._UpdatePage.ApplyUpdateUpdateChannelTitle;
+        ChannelName.Text = Lang._UpdatePage.ApplyUpdateUpdateChannelSubtitlePlaceholder;
+        Status.Text = Lang._UpdatePage.ApplyUpdateUpdateStatusTitle;
+        ActivityStatus.Text = Lang._UpdatePage.ApplyUpdateMiscIdle;
+        ActivitySubStatus.Text = Lang._UpdatePage.ApplyUpdateDownloadSizePlaceholder;
+        SpeedStatus.Text = Lang._UpdatePage.ApplyUpdateDownloadSpeedPlaceholder;
+        TimeEstimation.Text = Lang._UpdatePage.ApplyUpdateDownloadTimeEstPlaceholder;
     }
 
     private void UpdateCDNComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
