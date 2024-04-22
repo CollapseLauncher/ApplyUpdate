@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Hi3Helper.EncTool.Parser.InnoUninstallerLog;
 using Hi3Helper.Http;
 using LibISULR;
@@ -93,6 +94,8 @@ public partial class MainWindow : Window
             UpdateCDNRadioButtons.IsEnabled = false;
             await Task.Delay(100);
         }
+
+        TryKillAllCollapseProcesses();
 
         UpdateCDNRadioButtons.IsEnabled = true;
         UpdateCDNSelectorTitle.Text = previousTitleStr;
@@ -479,9 +482,10 @@ public partial class MainWindow : Window
     {
         if (await CheckIfNeedRefreshStopwatch(_refreshStopwatchStatus))
         {
-            ActivityStatus.Text = e.ActivityStatus;
-            ActivitySubStatus.Text = e.ActivitySubStatus;
-            progressBar.IsIndeterminate = e.IsProgressIndetermined;
+            if (Dispatcher.UIThread.CheckAccess())
+                UpdateStatusInner(e);
+            else
+                Dispatcher.UIThread.Invoke(() => UpdateStatusInner(e));
         }
     }
 
@@ -489,10 +493,25 @@ public partial class MainWindow : Window
     {
         if (await CheckIfNeedRefreshStopwatch(_refreshStopwatchProgress))
         {
-            progressBar.Value = e.ProgressPercentage;
-            SpeedStatus.Text = string.Format(Lang._UpdatePage.ApplyUpdateDownloadSpeed, SummarizeSizeSimple(e.Speed));
-            TimeEstimation.Text = string.Format(Lang._UpdatePage.ApplyUpdateDownloadTimeEst, e.TimeLeft);
+            if (Dispatcher.UIThread.CheckAccess())
+                UpdateProgressInner(e);
+            else
+                Dispatcher.UIThread.Invoke(() => UpdateProgressInner(e));
         }
+    }
+
+    private void UpdateStatusInner(UpdateStatus e)
+    {
+        ActivityStatus.Text = e.ActivityStatus;
+        ActivitySubStatus.Text = e.ActivitySubStatus;
+        progressBar.IsIndeterminate = e.IsProgressIndetermined;
+    }
+
+    private void UpdateProgressInner(UpdateProgress e)
+    {
+        progressBar.Value = e.ProgressPercentage;
+        SpeedStatus.Text = string.Format(Lang._UpdatePage.ApplyUpdateDownloadSpeed, SummarizeSizeSimple(e.Speed));
+        TimeEstimation.Text = string.Format(Lang._UpdatePage.ApplyUpdateDownloadTimeEst, e.TimeLeft);
     }
 
     private Stopwatch _refreshStopwatchProgress = Stopwatch.StartNew();

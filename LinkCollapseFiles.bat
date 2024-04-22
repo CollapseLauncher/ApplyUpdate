@@ -10,6 +10,7 @@ call :MakeFileLink ApplyUpdate-Core\Localization.cs ..\Collapse\Hi3Helper.Core\L
 call :MakeFileLink ApplyUpdate-Core\InvokeProp.cs ..\Collapse\Hi3Helper.Core\Classes\Data\InvokeProp.cs
 call :MakeFileLink ApplyUpdate-Core\IniFile.cs ..\Collapse\Hi3Helper.Core\Classes\Data\Tools\IniFile.cs
 call :MakeFileLink ApplyUpdate-Core\LangUpdatePage.cs ..\Collapse\Hi3Helper.Core\Lang\Locale\LangUpdatePage.cs
+call :MakeFileLink ApplyUpdate-Core\LangMisc.cs ..\Collapse\Hi3Helper.Core\Lang\Locale\LangMisc.cs
 for /r ..\Collapse\Hi3Helper.Core\Lang\ %%a in (*.json) do (
 	call :MakeFileLink ApplyUpdate-Core\Assets\Locale\%%~nxa %%~fa
 )

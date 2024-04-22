@@ -37,7 +37,12 @@ namespace ApplyUpdate
             new CDNURLProperty
             {
                 Name = "Bitbucket",
-                URLPrefix = "https://bitbucket.org/neon-nyan/collapselauncher-releaserepo/raw/main",
+                URLPrefix = "https://bitbucket.org/neon-nyan/collapselauncher-releaserepo/raw/main"
+            },
+            new CDNURLProperty
+            {
+                Name = "GitLab",
+                URLPrefix = "https://gitlab.com/bagusnl/CollapseLauncher-ReleaseRepo/-/raw/main/"
             }
         };
 
@@ -163,7 +168,7 @@ namespace ApplyUpdate
                     return true;
                 }
                 await httpInstance.Download(urlStatus.Item2, outputPath, (byte)parallelThread, true, token);
-                await httpInstance.Merge();
+                await httpInstance.Merge(token);
                 return true;
             }
             // Handle the error and log it. If fails, then log it and return false
@@ -187,7 +192,7 @@ namespace ApplyUpdate
             LogWriteLine($"Getting CDN Content from: {cdnProp.Name} at URL: {absoluteURL}");
 
             // Try check the status of the URL
-            (int, bool) returnCode = await httpInstance.GetURLStatus(absoluteURL, token);
+            Tuple<int, bool> returnCode = await httpInstance.GetURLStatus(absoluteURL, token);
 
             // If it's not a successful code, then return false
             if (!returnCode.Item2)

@@ -1,4 +1,5 @@
-﻿using Hi3Helper.Http;
+﻿using Hi3Helper;
+using Hi3Helper.Http;
 using System;
 using System.Diagnostics;
 using System.Formats.Tar;
@@ -63,7 +64,64 @@ namespace ApplyUpdate
         internal static UpdateProgress _propProgress = new UpdateProgress();
         internal static UpdateStatus _propStatus = new UpdateStatus();
 
-        internal static bool IsCollapseRunning() => Process.GetProcessesByName("CollapseLauncher").Length != 0;
+        internal static bool IsCollapseRunning() => EnumerateInstances() > 0;
+
+        public static Process[] GetCollapseInstanceProcesses()
+        {
+            var processes = Process.GetProcessesByName("CollapseLauncher");
+
+            return processes;
+        }
+
+        public static void TryKillAllCollapseProcesses()
+        {
+            foreach (var process in GetCollapseInstanceProcesses())
+            {
+                try
+                {
+                    process?.Kill();
+                }
+                catch (Exception ex)
+                {
+                    LogWriteLine($"Failed while killing Collapse process with PID: {process.Id}\r\n{ex}", Hi3Helper.LogType.Error, true);
+                }
+                process?.Dispose();
+            }
+        }
+
+        internal static int EnumerateInstances()
+        {
+            var instanceProc = GetCollapseInstanceProcesses();
+            var finalInstanceCount = 0;
+
+            foreach (Process p in instanceProc)
+            {
+                if (p == null) continue;
+                try
+                {
+                    if (p.MainWindowHandle == IntPtr.Zero)
+                    {
+                        LogWriteLine("Process does not have window, skipping...", Hi3Helper.LogType.NoTag, true);
+                        continue;
+                    }
+
+                    LogWriteLine($"Name: {p.ProcessName}", Hi3Helper.LogType.NoTag, true);
+                    LogWriteLine($"MainModule: {p.MainModule?.FileName}", Hi3Helper.LogType.NoTag, true);
+                    LogWriteLine($"PID: {p.Id}", Hi3Helper.LogType.NoTag, true);
+
+                    finalInstanceCount++;
+                }
+                catch (Exception ex)
+                {
+                    LogWriteLine($"Failed when trying to fetch an instance information! " +
+                                 $"InstanceCount is not incremented.\r\n{ex}",
+                                 Hi3Helper.LogType.Error, true);
+                }
+                p?.Dispose();
+            }
+
+            return finalInstanceCount;
+        }
 
         internal static string TryGetStampFilePath()
         {
@@ -296,12 +354,11 @@ namespace ApplyUpdate
             Console.WriteLine();
         }
 
-        private static readonly string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
         internal static string SummarizeSizeSimple(double value, int decimalPlaces = 2)
         {
             byte mag = (byte)Math.Log(value, 1000);
 
-            return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
+            return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), ConverterTool.SizeSuffixes[mag]);
         }
 
         private static async Task CreateFileFromStream(string outputDir, TarEntry entry)
