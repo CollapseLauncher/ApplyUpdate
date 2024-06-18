@@ -11,6 +11,7 @@ call :MakeFileLink ApplyUpdate-Core\InvokeProp.cs ..\Collapse\Hi3Helper.Core\Cla
 call :MakeFileLink ApplyUpdate-Core\IniFile.cs ..\Collapse\Hi3Helper.Core\Classes\Data\Tools\IniFile.cs
 call :MakeFileLink ApplyUpdate-Core\LangUpdatePage.cs ..\Collapse\Hi3Helper.Core\Lang\Locale\LangUpdatePage.cs
 call :MakeFileLink ApplyUpdate-Core\LangMisc.cs ..\Collapse\Hi3Helper.Core\Lang\Locale\LangMisc.cs
+call :MakeFileLink ApplyUpdate-Core\Assets\icon.ico ..\Collapse\CollapseLauncher\icon.ico
 for /r ..\Collapse\Hi3Helper.Core\Lang\ %%a in (*.json) do (
 	call :MakeFileLink ApplyUpdate-Core\Assets\Locale\%%~nxa %%~fa
 )
@@ -32,14 +33,14 @@ goto :End
 :MakeDirLink
 (
 	echo Making directory link from %~f2 to %~1
-	if /i not exist %~1 mklink /D %~1 %~f2 > nul || goto :ErrorOccured
+	if /i not exist %~1 xcopy /S /E /C /D /Y %~f2 %~1 > nul || goto :ErrorOccured
 	goto :EOF
 )
 
 :MakeFileLink
 (
 	echo Making file link from %~f2 to %~1
-	if /i not exist %~1 mklink /H %~1 %~f2 > nul || goto :ErrorOccured
+	if /i not exist %~1 copy /Y %~f2 %~1 > nul || goto :ErrorOccured
 	goto :EOF
 )
 
