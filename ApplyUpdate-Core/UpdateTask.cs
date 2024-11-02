@@ -262,29 +262,32 @@ namespace ApplyUpdate
         {
             if (!File.Exists(zipPath))
             {
-                string packageURL = FallbackCDNUtil.CombineURLFromString("squirrel", stamp, "latest");
-                using (Http httpClient = new Http(true))
+                string packageURL = FallbackCDNUtil.CombineURLFromString("velopack", stamp, "latest");
+                DownloadClient downloadClient = DownloadClient.CreateInstance(MainWindow.GlobalHttpClient);
+
+                _propStatus.ActivityStatus = Lang._UpdatePage.ApplyUpdateTaskDownloadingPkgTitle;
+                InvokeStatus();
+                Stopwatch localStopwatch = Stopwatch.StartNew();
+                FallbackCDNUtil.DownloadProgress += (_, progress) =>
                 {
-                    _propStatus.ActivityStatus = Lang._UpdatePage.ApplyUpdateTaskDownloadingPkgTitle;
+                    _propProgress.SizeProcessed = progress.SizeDownloaded;
+                    _propProgress.SizeToBeProcessed = progress.SizeToBeDownloaded;
+                    _propProgress.Read = progress.Read;
+
+                    long speed = (long)(progress.SizeDownloaded / localStopwatch.Elapsed.TotalSeconds);
+
+                    _propProgress.Speed = speed;
+
+                    _propStatus.IsProgressIndetermined = false;
+                    _propStatus.ActivitySubStatus = string.Format("{0} / {1}", SummarizeSizeSimple(progress.SizeDownloaded), SummarizeSizeSimple(progress.SizeToBeDownloaded));
+                    InvokeProgress();
                     InvokeStatus();
-                    FallbackCDNUtil.DownloadProgress += (_, progress) =>
-                    {
-                        _propProgress.SizeProcessed = progress.SizeDownloaded;
-                        _propProgress.SizeToBeProcessed = progress.SizeToBeDownloaded;
-                        _propProgress.Read = progress.Read;
-                        _propProgress.Speed = progress.Speed;
 
-                        _propStatus.IsProgressIndetermined = false;
-                        _propStatus.ActivitySubStatus = string.Format("{0} / {1}", SummarizeSizeSimple(progress.SizeDownloaded), SummarizeSizeSimple(progress.SizeToBeDownloaded));
-                        InvokeProgress();
-                        InvokeStatus();
-
-                        string print = GetBothAlignedString($"Downloading package: {Math.Round(progress.ProgressPercentage, 2)}% [{SummarizeSizeSimple(progress.Speed)}/s]...", $"[{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}]");
-                        Console.Write($"\r{print}");
-                    };
-                    await FallbackCDNUtil.DownloadCDNFallbackContent(httpClient, zipPath, (byte)(Environment.ProcessorCount >= 4 ? 4 : Environment.ProcessorCount), packageURL, default);
-                    Console.WriteLine();
-                }
+                    string print = GetBothAlignedString($"Downloading package: {Math.Round(progress.ProgressPercentage, 2)}% [{SummarizeSizeSimple(progress.Speed)}/s]...", $"[{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}]");
+                    Console.Write($"\r{print}");
+                };
+                await FallbackCDNUtil.DownloadCDNFallbackContent(downloadClient, zipPath, (byte)(Environment.ProcessorCount >= 4 ? 4 : Environment.ProcessorCount), packageURL, default);
+                Console.WriteLine();
             }
         }
 

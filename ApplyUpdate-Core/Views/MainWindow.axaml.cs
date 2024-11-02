@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -27,6 +29,20 @@ public partial class JSONContext : JsonSerializerContext { }
 
 public partial class MainWindow : Window
 {
+    private static SocketsHttpHandler GlobalSocketHttpHandler = new SocketsHttpHandler
+    {
+        AutomaticDecompression = DecompressionMethods.None,
+        AllowAutoRedirect = true,
+        EnableMultipleHttp3Connections = true,
+        EnableMultipleHttp2Connections = true,
+        MaxConnectionsPerServer = 256
+    };
+    public static HttpClient GlobalHttpClient = new HttpClient(GlobalSocketHttpHandler, false)
+    {
+        DefaultRequestVersion = HttpVersion.Version30,
+        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+    };
+
     private CancellationTokenSource CountDownToken { get; set; }
     private string Stamp { get; set; }
     private bool IsStampFromFile { get; set; }
@@ -468,14 +484,11 @@ public partial class MainWindow : Window
 
     private async Task<AppUpdateVersionProp> FetchMetadata(string stamp)
     {
-        using (MemoryStream ms = new MemoryStream())
-        using (Http _httpClient = new Http())
-        {
-            await FallbackCDNUtil.DownloadCDNFallbackContent(_httpClient, ms, $"{stamp}/fileindex.json", default);
-            ms.Position = 0;
-            AppUpdateVersionProp updateInfo = (AppUpdateVersionProp)await JsonSerializer.DeserializeAsync(ms, typeof(AppUpdateVersionProp), JSONContext.Default)!;
-            return updateInfo;
-        }
+        CDNURLProperty preferredUrl = FallbackCDNUtil.GetPreferredCDN();
+        string stampUrl = FallbackCDNUtil.CombineURLFromString(preferredUrl.URLPrefix, stamp, "fileindex.json");
+        await using Stream stream = await HttpResponseInputStream.CreateStreamAsync(GlobalHttpClient, stampUrl, 0, null, null, null, null, default);
+        AppUpdateVersionProp updateInfo = await JsonSerializer.DeserializeAsync(stream, JSONContext.Default.AppUpdateVersionProp)!;
+        return updateInfo;
     }
 
     private async void UpdateTask_UpdateStatus(object sender, UpdateStatus e)

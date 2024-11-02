@@ -5,11 +5,6 @@ using static Hi3Helper.Locale;
 
 namespace ApplyUpdate
 {
-    internal enum LogType
-    {
-        Scheme, Default, Warning, Error, Debug, NoTag
-    }
-
     [JsonSerializable(typeof(LocalizationParams))]
     internal partial class CoreLibraryFieldsJSONContext : JsonSerializerContext { }
 
