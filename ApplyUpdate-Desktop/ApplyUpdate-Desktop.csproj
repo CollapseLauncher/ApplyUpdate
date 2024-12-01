@@ -9,14 +9,17 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<ApplicationIcon>..\ApplyUpdate-Core\Assets\icon.ico</ApplicationIcon>
 		<Platforms>x64</Platforms>
-		<Version>2.2.0</Version>
+		<Version>2.3.0</Version>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
 		<DirectPInvoke Include="libHarfBuzzSharp" />
-		<NativeLibrary Include="nativeLib\libHarfBuzzSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="nativeLib\libHarfBuzzSharp.lib" />
 		<DirectPInvoke Include="libSkiaSharp" />
-		<NativeLibrary Include="nativeLib\libSkiaSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="nativeLib\libSkiaSharp.lib" />
+        <DirectPInvoke Include="nativeLib/rcedit" />
+        <NativeLibrary Include="nativeLib\rcedit.lib" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -26,5 +29,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ApplyUpdate-Core\ApplyUpdate-Core.csproj" />
+	</ItemGroup>
+
+    <ItemGroup Condition="'$(PublishAot)' != 'true'">
+	  <None Update="nativeLib\rcedit.dll">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 </Project>

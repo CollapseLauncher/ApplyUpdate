@@ -3,13 +3,14 @@ using Hi3Helper;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using static Hi3Helper.Logger;
 
 namespace ApplyUpdate;
 
-class Program
+public static partial class Program
 {
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
@@ -21,6 +22,16 @@ class Program
         Logger._log = new LoggerConsole("", Encoding.Unicode);
         Console.OutputEncoding = Encoding.Unicode;
         Console.Title = "Collapse Launcher ApplyUpdate Console";
+
+        if (args.Length == 3 && args[0].ToLower() == "changevelopackinstperms")
+        {
+            string permission = args[1];
+            string executableFile = args[2];
+
+            ChangeVelopackExecPerms(permission, executableFile);
+            return;
+        }
+
         if (args.Length != 0 && args[0].ToLower() == "compress")
         {
 #if !DEBUG
@@ -55,6 +66,73 @@ class Program
 #endif
         // .UseReactiveUI()
         ;
+
+    [LibraryImport("nativeLib/rcedit", EntryPoint = "ChangeExecutablePermission", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial int ChangePermissionNative(string execPath, string permission);
+
+    private static byte[] VelopackPkgSignature = [
+        0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x08
+        ];
+
+    private static void ChangeVelopackExecPerms(string permission, string execPath)
+    {
+        string execTempPath = Path.Combine(execPath + ".temp");
+        string execNewPath = Path.Combine(execPath + ".new");
+        if (!File.Exists(execPath))
+            throw new FileNotFoundException("File not found!", execPath);
+
+        if (!(permission.Equals("requireAdministrator")
+           || permission.Equals("asInvoker")
+           || permission.Equals("highestAvailable")))
+        {
+            throw new InvalidOperationException($"Unable to set execution level: {permission}. Valid execution level: asInvoker, highestAvailable or requireAdministrator");
+        }
+
+        try
+        {
+            File.Copy(execPath, execTempPath, true);
+            int result;
+            switch (result = ChangePermissionNative(execTempPath, permission))
+            {
+                case 0:
+                    break;
+                case 1:
+                    throw new InvalidOperationException("Failed to apply permission changes on native library (rcedit.dll)");
+                case 2:
+                    throw new InvalidOperationException($"Unable to set execution level: {permission}. Valid execution level: asInvoker, highestAvailable or requireAdministrator");
+                case 3:
+                    throw new InvalidOperationException($"Unable to load file: {execPath}. Valid execution level: asInvoker, highestAvailable or requireAdministrator");
+                default:
+                    throw new InvalidOperationException($"Unknown error: {result}");
+            }
+
+            Span<byte> oldFileBytes = File.ReadAllBytes(execPath);
+            Span<byte> newFileBytes = File.ReadAllBytes(execTempPath);
+            LogWriteLine($"Changed Velopack installer permission to: {permission} for file: {execPath}");
+
+            int pkgOffset = oldFileBytes.IndexOf(VelopackPkgSignature);
+            if (pkgOffset == -1)
+                throw new IndexOutOfRangeException("Unable to find the Velopack Package data inside of the executable!");
+
+            LogWriteLine($"Got offset of the package data at: {pkgOffset} (0x{pkgOffset:x8})");
+            ReadOnlySpan<byte> zipPkgBuffer = oldFileBytes.Slice(pkgOffset);
+
+            using (FileStream fileStream = new FileStream(execNewPath, FileMode.Create, FileAccess.Write))
+            {
+                LogWriteLine($"Writing executable data...");
+                fileStream.Write(newFileBytes);
+                LogWriteLine($"Writing Velopack Package data...");
+                fileStream.Write(zipPkgBuffer);
+            }
+
+            File.Move(execNewPath, execPath, true);
+            LogWriteLine($"Done!");
+        }
+        finally
+        {
+            File.Delete(execTempPath);
+        }
+    }
 
     private static int CompressMode(params string[] args)
     {

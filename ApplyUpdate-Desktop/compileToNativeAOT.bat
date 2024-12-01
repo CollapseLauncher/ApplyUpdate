@@ -5,6 +5,8 @@
 if not exist "nativeLib" mkdir nativeLib
 if not exist "nativeLib\libSkiaSharp.lib" goto :RequireLibMsg
 if not exist "nativeLib\libHarfBuzzSharp.lib" goto :RequireLibMsg
+if not exist "nativeLib\rcedit.lib" goto :RequireLibMsg
+if not exist "nativeLib\rcedit.dll" goto :RequireLibMsg
 if not exist "nativeLib\upx.exe" goto :RequireUpxMsg
 
 :: Clean-up the solution and restore all NuGet packages
@@ -45,7 +47,7 @@ goto :SuccessMsg
 :RequireLibMsg
 	echo libSkiaSharp.lib or libHarfBuzzSharp.lib library doesn't exist in the "nativeLib" folder!
 	echo Please download the necessary libraries here:
-	echo https://github.com/CollapseLauncher/ApplyUpdate/releases/tag/aotlib-20232612
+	echo https://github.com/CollapseLauncher/ApplyUpdate/releases/tag/aotlib-20241201
 	echo.
 	echo Find the download link for "Avalonia-AOT_minimalLib_########.zip"
 	echo then extract the .lib file into "nativeLib" folder and re-run this script
