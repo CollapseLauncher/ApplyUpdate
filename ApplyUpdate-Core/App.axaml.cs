@@ -13,6 +13,8 @@ namespace ApplyUpdate;
 
 public partial class App : Application
 {
+    public static IClassicDesktopStyleApplicationLifetime CurrentWindow;
+
     public override void Initialize()
     {
         string localeName = GetCurrentLanguageFromCollapseConfig();
@@ -25,7 +27,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime window)
         {
-            PInvoke.m_window = window;
+            CurrentWindow = window;
             window.MainWindow = new MainWindow()
             /*
             {
@@ -63,4 +65,7 @@ public partial class App : Application
 
         return defaultLocale;
     }
+
+    public static nint GetCurrentWindowHwnd()
+        => CurrentWindow.MainWindow.TryGetPlatformHandle()?.Handle ?? nint.Zero;
 }

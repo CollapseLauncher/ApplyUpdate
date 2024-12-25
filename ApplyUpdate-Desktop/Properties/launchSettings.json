@@ -1,8 +1,7 @@
 {
   "profiles": {
     "ApplyUpdate-Desktop": {
-      "commandName": "Project",
-      "commandLineArgs": "changevelopackinstperms requireAdministrator \"E:\\myGit\\CollapseLauncher-ReleaseRepo\\velopack\\preview\\CollapseLauncher-preview-Setup.exe\""
+      "commandName": "Project"
     }
   }
 }

@@ -4,6 +4,8 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Hi3Helper.EncTool.Parser.InnoUninstallerLog;
 using Hi3Helper.Http;
+using Hi3Helper.Win32.Native.Enums;
+using Hi3Helper.Win32.Native.LibraryImport;
 using LibISULR;
 using LibISULR.Flags;
 using LibISULR.Records;
@@ -103,15 +105,69 @@ public partial class MainWindow : Window
 
         string previousTitleStr = UpdateCDNSelectorTitle.Text!;
 
+        bool isCollapseRunning = IsCollapseRunning();
+        if (isCollapseRunning && PInvoke.MessageBox(
+                App.GetCurrentWindowHwnd(),
+                Lang._UpdatePage.ApplyUpdateErrCollapseRunSubtitleWarnBox,
+                Lang._UpdatePage.ApplyUpdateErrCollapseRunTitleWarnBox,
+                MessageBoxFlags.MB_SYSTEMMODAL | MessageBoxFlags.MB_ICONWARNING | MessageBoxFlags.MB_YESNO) == MessageBoxResult.IDYES)
+        {
+            TryKillAllCollapseProcesses();
+        }
+
         while (IsCollapseRunning())
         {
             UpdateCDNSelectorTitle.Text = Lang._UpdatePage.ApplyUpdateErrCollapseRunTitle;
             UpdateCDNSelectorSubtitle.Text = Lang._UpdatePage.ApplyUpdateErrCollapseRunSubtitle;
             UpdateCDNRadioButtons.IsEnabled = false;
+
             await Task.Delay(100);
         }
 
-        TryKillAllCollapseProcesses();
+        if (IsSquirrelJunkExist())
+        {
+            MessageBoxResult messageResult = PInvoke.MessageBox(
+                            App.GetCurrentWindowHwnd(),
+                            Lang._UpdatePage.ApplyUpdateErrVelopackStateBrokenSubtitleWarnBox,
+                            Lang._UpdatePage.ApplyUpdateErrVelopackStateBrokenTitleWarnBox,
+                            MessageBoxFlags.MB_SYSTEMMODAL | MessageBoxFlags.MB_ICONWARNING | MessageBoxFlags.MB_YESNO);
+
+            if (messageResult == MessageBoxResult.IDYES)
+            {
+                // Clean-up old directory first
+                foreach (string oldPath in Directory.EnumerateDirectories(workingDir, "app-*", SearchOption.TopDirectoryOnly)
+                    .Where(x => Directory.EnumerateFiles(x, "*", SearchOption.TopDirectoryOnly)
+                        .Any(x => x.EndsWith("CollapseLauncher.exe", StringComparison.OrdinalIgnoreCase))))
+                {
+                    TryDoPathAction(oldPath, PathAction.delete, PathType.directory);
+                }
+
+                // Remove stub and some junk files
+                string stubPath = Path.Combine(workingDir, "CollapseLauncher.exe");
+                string createDumpPath = Path.Combine(workingDir, "createdump.exe");
+                string restartAgentPath = Path.Combine(workingDir, "RestartAgent.exe");
+                TryDoPathAction(stubPath, PathAction.delete, PathType.file);
+                TryDoPathAction(createDumpPath, PathAction.delete, PathType.file);
+                TryDoPathAction(restartAgentPath, PathAction.delete, PathType.file);
+
+                // Try reset Velopack state if exist
+                string veloPackageDir = Path.Combine(workingDir, "packages");
+                DirectoryInfo veloPackageDirInfo = new DirectoryInfo(veloPackageDir);
+                if (veloPackageDirInfo.Exists)
+                {
+                    foreach (FileInfo file in veloPackageDirInfo.EnumerateFiles("*.nupkg", SearchOption.TopDirectoryOnly))
+                    {
+                        TryDoPathAction(file.FullName, PathAction.delete, PathType.file);
+                    }
+                }
+                string veloPackageTempDir = Path.Combine(veloPackageDir, "VelopackTemp");
+                string veloPackageLockPath = Path.Combine(veloPackageDir, ".velopack_lock");
+                string veloPackageBetaIdPath = Path.Combine(veloPackageDir, ".betaId");
+                TryDoPathAction(veloPackageTempDir, PathAction.delete, PathType.directory);
+                TryDoPathAction(veloPackageLockPath, PathAction.delete, PathType.file);
+                TryDoPathAction(veloPackageBetaIdPath, PathAction.delete, PathType.file);
+            }
+        }
 
         UpdateCDNRadioButtons.IsEnabled = true;
         UpdateCDNSelectorTitle.Text = previousTitleStr;
@@ -308,7 +364,7 @@ public partial class MainWindow : Window
 
             // Start Collapse
             proc.Start();
-            PInvoke.m_window.Shutdown();
+            App.CurrentWindow.Shutdown();
             return;
         }
         catch (Exception ex)
@@ -425,7 +481,7 @@ public partial class MainWindow : Window
 
     private void SpawnError(string message)
     {
-        PInvoke.ShowWindow(PInvoke.m_consoleWindow, 5);
+        PInvoke.ShowWindow(PInvoke.GetConsoleWindow(), 5);
         UpdateCDNProgressPanel.IsVisible = false;
         UpdateCDNSelectorPanel.IsVisible = true;
         UpdateCDNRadioButtons.IsVisible = false;

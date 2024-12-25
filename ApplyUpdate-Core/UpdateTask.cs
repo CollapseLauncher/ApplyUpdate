@@ -1,5 +1,7 @@
 ﻿using Hi3Helper;
 using Hi3Helper.Http;
+using Hi3Helper.Win32.Native.Enums;
+using Hi3Helper.Win32.Native.LibraryImport;
 using System;
 using System.Diagnostics;
 using System.Formats.Tar;
@@ -105,9 +107,9 @@ namespace ApplyUpdate
                         continue;
                     }
 
-                    LogWriteLine($"Name: {p.ProcessName}", Hi3Helper.LogType.NoTag, true);
-                    LogWriteLine($"MainModule: {p.MainModule?.FileName}", Hi3Helper.LogType.NoTag, true);
-                    LogWriteLine($"PID: {p.Id}", Hi3Helper.LogType.NoTag, true);
+                    LogWriteLine($"Name: {p.ProcessName}", LogType.NoTag, true);
+                    LogWriteLine($"MainModule: {p.MainModule?.FileName}", LogType.NoTag, true);
+                    LogWriteLine($"PID: {p.Id}", LogType.NoTag, true);
 
                     finalInstanceCount++;
                 }
@@ -115,7 +117,7 @@ namespace ApplyUpdate
                 {
                     LogWriteLine($"Failed when trying to fetch an instance information! " +
                                  $"InstanceCount is not incremented.\r\n{ex}",
-                                 Hi3Helper.LogType.Error, true);
+                                 LogType.Error, true);
                 }
                 p?.Dispose();
             }
@@ -137,7 +139,7 @@ namespace ApplyUpdate
             string stampFile = TryGetStampFilePath();
             if (!File.Exists(stampFile))
             {
-                LogWriteLine($"\"release\" file doesn't exist in \"_Temp\\release\" or current directory", Hi3Helper.LogType.Warning);
+                LogWriteLine($"\"release\" file doesn't exist in \"_Temp\\release\" or current directory", LogType.Warning);
 
                 return null;
             }
@@ -150,6 +152,30 @@ namespace ApplyUpdate
             }
 
             return lines[0];
+        }
+
+        internal static bool IsSquirrelJunkExist()
+        {
+            string stubPath = Path.Combine(workingDir, "CollapseLauncher.exe");
+            string createDumpPath = Path.Combine(workingDir, "createdump.exe");
+            string restartAgentPath = Path.Combine(workingDir, "RestartAgent.exe");
+
+            if (File.Exists(stubPath) &&
+                File.Exists(createDumpPath) &&
+                File.Exists(restartAgentPath) &&
+                IsSquirrelAppDirExist())
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static bool IsSquirrelAppDirExist()
+        {
+            return Directory.EnumerateDirectories(workingDir, "app-*", SearchOption.TopDirectoryOnly)
+                .Any(x => Directory.EnumerateFiles(x, "*", SearchOption.TopDirectoryOnly)
+                    .Any(y => y.EndsWith("CollapseLauncher.exe")));
         }
 
         internal static async Task<bool> CleanupOldFiles()
@@ -176,15 +202,16 @@ namespace ApplyUpdate
                 + Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle3
                 + Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle4;
 
-            uint msgStyle = 0x00000004u | 0x00000030u | 0x00001000u;
-            int result = PInvoke.MessageBoxExA(IntPtr.Zero, msg, title, msgStyle);
+            MessageBoxFlags msgStyle = MessageBoxFlags.MB_YESNO | MessageBoxFlags.MB_ICONWARNING | MessageBoxFlags.MB_SYSTEMMODAL;
+            nint currentParentHwnd = App.GetCurrentWindowHwnd();
+            MessageBoxResult result = PInvoke.MessageBox(currentParentHwnd, msg, title, msgStyle);
             // Result:
             //    7 = No
             //    6 = Yes
-            if (result == 7) return false;
+            if (result == MessageBoxResult.IDNO) return false;
 
-            result = PInvoke.MessageBoxExA(IntPtr.Zero, Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle5, title, msgStyle);
-            if (result == 7) return false;
+            result = PInvoke.MessageBox(currentParentHwnd, Lang._UpdatePage.ApplyUpdateTaskLegacyVerFoundSubtitle5, title, msgStyle);
+            if (result == MessageBoxResult.IDNO) return false;
 
             int count = 5;
             while (count > 0)
@@ -213,7 +240,7 @@ namespace ApplyUpdate
                     catch (Exception ex)
                     {
                         Console.WriteLine();
-                        LogWriteLine($"Error!\r\n{ex}", Hi3Helper.LogType.Error);
+                        LogWriteLine($"Error!\r\n{ex}", LogType.Error);
                     }
                 }
             }
@@ -232,7 +259,7 @@ namespace ApplyUpdate
                     catch (Exception ex)
                     {
                         Console.WriteLine();
-                        LogWriteLine($"Error!\r\n{ex}", Hi3Helper.LogType.Error);
+                        LogWriteLine($"Error!\r\n{ex}", LogType.Error);
                     }
                 }
             }
@@ -419,6 +446,14 @@ namespace ApplyUpdate
 
         private static void TryDeleteDirectory(string path)
         {
+            DirectoryInfo directoryInfo = new DirectoryInfo(path);
+            if (directoryInfo.Exists)
+            {
+                foreach (FileInfo fileInfo in directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    TryDeleteFile(fileInfo);
+                }
+            }
             if (Directory.Exists(path))
             {
                 Directory.Delete(path, true);
@@ -427,16 +462,14 @@ namespace ApplyUpdate
 
         private static void TryDeleteFile(string path)
         {
-            try
+            FileInfo fileInfo = new FileInfo(path);
+            TryDeleteFile(fileInfo);
+        }
+
+        private static void TryDeleteFile(FileInfo fileInfo)
+        {
+            if (fileInfo.Exists)
             {
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
-            }
-            catch
-            {
-                FileInfo fileInfo = new FileInfo(path);
                 fileInfo.IsReadOnly = false;
                 fileInfo.Delete();
             }

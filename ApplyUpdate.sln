@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdate-Core", "ApplyUp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdate-Desktop", "ApplyUpdate-Desktop\ApplyUpdate-Desktop.csproj", "{3A566CEC-FB86-49FD-B7A4-E9BE23D15425}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hi3Helper.Win32", "Hi3Helper.Win32\Hi3Helper.Win32.csproj", "{F65C6DAC-CC04-214B-9430-2C4AE31448E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,10 @@ Global
 		{3A566CEC-FB86-49FD-B7A4-E9BE23D15425}.Debug|x64.Build.0 = Debug|x64
 		{3A566CEC-FB86-49FD-B7A4-E9BE23D15425}.Release|x64.ActiveCfg = Release|x64
 		{3A566CEC-FB86-49FD-B7A4-E9BE23D15425}.Release|x64.Build.0 = Release|x64
+		{F65C6DAC-CC04-214B-9430-2C4AE31448E2}.Debug|x64.ActiveCfg = Debug|x64
+		{F65C6DAC-CC04-214B-9430-2C4AE31448E2}.Debug|x64.Build.0 = Debug|x64
+		{F65C6DAC-CC04-214B-9430-2C4AE31448E2}.Release|x64.ActiveCfg = Release|x64
+		{F65C6DAC-CC04-214B-9430-2C4AE31448E2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

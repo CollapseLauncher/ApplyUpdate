@@ -4,3 +4,6 @@
 [submodule "ApplyUpdate-Core/InnoSetupLogParser"]
 	path = ApplyUpdate-Core/InnoSetupLogParser
 	url = https://github.com/CollapseLauncher/InnoSetupLogParser
+[submodule "Hi3Helper.Win32"]
+	path = Hi3Helper.Win32
+	url = https://github.com/CollapseLauncher/Hi3Helper.Win32
