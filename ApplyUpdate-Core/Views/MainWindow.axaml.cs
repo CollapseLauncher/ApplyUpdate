@@ -290,6 +290,21 @@ public partial class MainWindow : Window
 
             await ExtractPackage(zipPath, zipExtractPath);
 
+            if (Directory.Exists(launcherAppDataPath))
+            {
+                string stampFilePath = Path.Combine(launcherAppDataPath, "_NewVer");
+                string innoNeedUpdatePath = Path.Combine(launcherAppDataPath, "_NeedInnoLogUpdate");
+
+                File.WriteAllText(stampFilePath, newVersion.VersionString);
+                if (IsInnoManifestFileExist())
+                {
+                    File.WriteAllText(innoNeedUpdatePath, newVersion.VersionString);
+                }
+
+                bool IsInnoManifestFileExist()
+                    => Directory.EnumerateFiles(workingDir, "unins*.dat", SearchOption.TopDirectoryOnly).Any();
+            }
+
             while (true)
             {
                 // Remove old folders

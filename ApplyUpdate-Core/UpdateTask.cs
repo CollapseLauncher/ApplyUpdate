@@ -33,6 +33,7 @@ namespace ApplyUpdate
         public static string sourcePath = Path.Combine(workingDir, Path.GetFileName(execPath));
         public static string applyExec = Path.GetFileNameWithoutExtension(realExecPath);
         public static string launcherPath = Path.Combine(workingDir, "current", "CollapseLauncher.exe");
+        public static string launcherAppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow\CollapseLauncher");
 
         public static string zipPath = Path.Combine(tempDir, "latest");
         public static string zipExtractPath = Path.Combine(tempDir, "_Extract");
