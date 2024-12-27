@@ -6,6 +6,7 @@ using Hi3Helper;
 using Hi3Helper.Data;
 using System.IO;
 #if !DEBUG
+using Hi3Helper.Win32.Native.LibraryImport;
 using System;
 #endif
 
@@ -28,17 +29,11 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime window)
         {
             CurrentWindow = window;
-            window.MainWindow = new MainWindow()
-            /*
-            {
-                DataContext = new MainViewModel()
-            }
-            */
-            ;
+            window.MainWindow = new MainWindow();
             window.Exit += (a, b) =>
             {
 #if !DEBUG
-                PInvoke.ShowWindow(PInvoke.m_consoleWindow, 5);
+                PInvoke.ShowWindow(PInvoke.GetConsoleWindow(), 5);
                 Console.WriteLine("Quit from ApplyUpdate and restored the console window.");
 #endif
             };

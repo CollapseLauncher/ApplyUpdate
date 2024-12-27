@@ -1,5 +1,8 @@
 ﻿using Avalonia;
 using Hi3Helper;
+#if !DEBUG
+using Hi3Helper.Win32.Native.LibraryImport;
+#endif
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -35,7 +38,7 @@ public static partial class Program
         if (args.Length != 0 && args[0].ToLower() == "compress")
         {
 #if !DEBUG
-            PInvoke.AllocateConsole();
+            PInvoke.AllocConsole();
 #endif
             if (CompressMode(args) > 0) Console.ReadLine();
             return;
@@ -49,7 +52,7 @@ public static partial class Program
 
 #if !DEBUG
         // PInvoke.AllocateConsole();
-        PInvoke.ShowWindow(PInvoke.m_consoleWindow, 0);
+        PInvoke.ShowWindow(PInvoke.GetConsoleWindow(), 0);
 #endif
 
         BuildAvaloniaApp()
