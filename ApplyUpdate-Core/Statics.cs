@@ -6,6 +6,7 @@ using static Hi3Helper.Locale;
 namespace ApplyUpdate
 {
     [JsonSerializable(typeof(LocalizationParams))]
+    [JsonSerializable(typeof(LocalizationParamsBase))]
     internal partial class CoreLibraryFieldsJSONContext : JsonSerializerContext { }
 
     internal static class Statics
