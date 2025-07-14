@@ -23,31 +23,52 @@ namespace ApplyUpdate
 
     public static class FallbackCDNUtil
     {
-        public static List<CDNURLProperty> CDNList = new List<CDNURLProperty>
-        {
-            new CDNURLProperty
-              {
-                  Name = "GitHub",
-                  URLPrefix = "https://github.com/CollapseLauncher/CollapseLauncher-ReleaseRepo/raw/main",
-                  PartialDownloadSupport = true
-              },
-              new CDNURLProperty
-              {
-                  Name = "Cloudflare",
-                  URLPrefix = "https://r2.bagelnl.my.id/cl-cdn",
-                  PartialDownloadSupport = true
-              },
-              new CDNURLProperty
-              {
-                  Name = "GitLab",
-                  URLPrefix = "https://gitlab.com/bagusnl/CollapseLauncher-ReleaseRepo/-/raw/main/"
-              },
-              new CDNURLProperty
-              {
-                  Name = "Coding",
-                  URLPrefix = "https://ohly-generic.pkg.coding.net/collapse/release/"
-              },
-        };
+        public static List<CDNURLProperty> CDNList =
+        [
+            new()
+            {
+                Name = "Cloudflare",
+                URLPrefix = "https://r2.bagelnl.my.id/cl-cdn",
+                PartialDownloadSupport = true
+            },
+
+
+            new()
+            {
+                Name = "DigitalOcean",
+                URLPrefix = "https://cdn.collapselauncher.com/cl-cdn",
+                PartialDownloadSupport = true
+            },
+
+
+            new()
+            {
+                Name = "GitHub",
+                URLPrefix = "https://github.com/CollapseLauncher/CollapseLauncher-ReleaseRepo/raw/main",
+                PartialDownloadSupport = true
+            },
+
+
+            new()
+            {
+                Name = "GitLab",
+                URLPrefix = "https://gitlab.com/bagusnl/CollapseLauncher-ReleaseRepo/-/raw/main/",
+            },
+
+
+            new()
+            {
+                Name = "Coding" + $" [{Locale.Lang._Misc.Tag_Deprecated}]",
+                URLPrefix = "https://ohly-generic.pkg.coding.net/collapse/release/",
+            },
+
+
+            new()
+            {
+                Name = "CNB",
+                URLPrefix = "https://cnb.cool/CollapseLauncher/ReleaseRepo/-/git/raw/main/",
+            }
+        ];
 
         public static event EventHandler<DownloadEvent> DownloadProgress;
 

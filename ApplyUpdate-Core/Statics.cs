@@ -7,7 +7,7 @@ namespace ApplyUpdate
 {
     [JsonSerializable(typeof(LocalizationParams))]
     [JsonSerializable(typeof(LocalizationParamsBase))]
-    internal partial class CoreLibraryFieldsJSONContext : JsonSerializerContext { }
+    internal partial class CoreLibraryFieldsJsonContext : JsonSerializerContext { }
 
     internal static class Statics
     {

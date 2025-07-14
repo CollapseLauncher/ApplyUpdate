@@ -54,7 +54,7 @@ public partial class App : Application
             IniFile iniFile = new IniFile();
             iniFile.Load(configFile);
 
-            if (!iniFile.ContainsSection(sectionName)) return defaultLocale;
+            if (!iniFile.ContainsKey(sectionName)) return defaultLocale;
             return iniFile[sectionName].ContainsKey(keyName) ? iniFile[sectionName][keyName].ToString() : defaultLocale;
         }
 

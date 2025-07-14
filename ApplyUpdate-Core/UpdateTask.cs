@@ -21,6 +21,8 @@ namespace ApplyUpdate
         internal enum PathType { file, directory }
         enum StringAlign { left, center, right }
 
+        public static string[] SizeSuffixes = [];
+
         private static bool _isConsoleWindowHasWidth = IsConsoleWindowHasWidth();
         private static int _windowBufferWidth { get => _isConsoleWindowHasWidth ? Console.WindowWidth : 0; }
 
@@ -389,7 +391,7 @@ namespace ApplyUpdate
         {
             byte mag = (byte)Math.Log(value, 1000);
 
-            return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), ConverterTool.SizeSuffixes[mag]);
+            return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
         }
 
         private static async Task CreateFileFromStream(string outputDir, TarEntry entry)

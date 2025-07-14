@@ -22,7 +22,7 @@ public static partial class Program
     public static void Main(string[] args)
     {
         // PInvoke.AllocateConsole();
-        Logger._log = new LoggerConsole("", Encoding.Unicode);
+        CurrentLogger = new LoggerConsole("", Encoding.Unicode);
         Console.OutputEncoding = Encoding.Unicode;
         Console.Title = "Collapse Launcher ApplyUpdate Console";
 

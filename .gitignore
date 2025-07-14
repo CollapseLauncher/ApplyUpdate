@@ -5,12 +5,7 @@
 
 ApplyUpdate-Desktop/build
 ApplyUpdate-Desktop/nativeLib
-ApplyUpdate-Core/Logger
 ApplyUpdate-Core/Assets/Locale
-ApplyUpdate-Core/Localization.cs
-ApplyUpdate-Core/LangUpdatePage.cs
-ApplyUpdate-Core/IniFile.cs
-ApplyUpdate-Core/InvokeProp.cs
 
 # User-specific files
 *.rsuser

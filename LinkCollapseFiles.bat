@@ -7,8 +7,9 @@ if /i not exist ..\Collapse goto :RequireCollapseRepo
 if /i not exist ApplyUpdate-Core\Assets\Locale mkdir ApplyUpdate-Core\Assets\Locale || goto :ErrorOccured
 call :MakeDirLink ApplyUpdate-Core\Logger ..\Collapse\Hi3Helper.Core\Classes\Logger
 call :MakeFileLink ApplyUpdate-Core\Localization.cs ..\Collapse\Hi3Helper.Core\Lang\Localization.cs
-call :MakeFileLink ApplyUpdate-Core\InvokeProp.cs ..\Collapse\Hi3Helper.Core\Classes\Data\InvokeProp.cs
-call :MakeFileLink ApplyUpdate-Core\IniFile.cs ..\Collapse\Hi3Helper.Core\Classes\Data\Tools\IniFile.cs
+call :MakeFileLink ApplyUpdate-Core\IniFile.cs ..\Collapse\Hi3Helper.Core\Data\IniFile.cs
+call :MakeFileLink ApplyUpdate-Core\IniSection.cs ..\Collapse\Hi3Helper.Core\Data\IniSection.cs
+call :MakeFileLink ApplyUpdate-Core\IniValue.cs ..\Collapse\Hi3Helper.Core\Data\IniValue.cs
 call :MakeFileLink ApplyUpdate-Core\LangUpdatePage.cs ..\Collapse\Hi3Helper.Core\Lang\Locale\LangUpdatePage.cs
 call :MakeFileLink ApplyUpdate-Core\LangMisc.cs ..\Collapse\Hi3Helper.Core\Lang\Locale\LangMisc.cs
 call :MakeFileLink ApplyUpdate-Core\Assets\icon.ico ..\Collapse\CollapseLauncher\icon.ico
@@ -33,14 +34,16 @@ goto :End
 :MakeDirLink
 (
 	echo Making directory link from %~f2 to %~1
-	if /i not exist %~1 xcopy /S /E /C /D /Y %~f2 %~1 > nul || goto :ErrorOccured
+    if /i exist "%~1" rmdir /S /Q %~1 || goto :ErrorOccured
+	if /i not exist %~1 xcopy /S /E /C /D /Y %~f2 %~1 || goto :ErrorOccured
 	goto :EOF
 )
 
 :MakeFileLink
 (
 	echo Making file link from %~f2 to %~1
-	if /i not exist %~1 copy /Y %~f2 %~1 > nul || goto :ErrorOccured
+    if /i exist "%~1" del %~1 || goto :ErrorOccured
+	if /i not exist %~1 copy /Y %~f2 %~1 || goto :ErrorOccured
 	goto :EOF
 )
 

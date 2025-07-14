@@ -1,3 +1,8 @@
+using WinRT;
+// ReSharper disable PartialTypeWithSinglePart
+// ReSharper disable InconsistentNaming
+// ReSharper disable IdentifierTypo
+
 namespace Hi3Helper
 {
     public sealed partial class Locale
@@ -6,7 +11,9 @@ namespace Hi3Helper
         public sealed partial class LocalizationParams
         {
             public LangMisc _Misc { get; set; } = LangFallback?._Misc;
-            public sealed class LangMisc
+
+            [GeneratedBindableCustomProperty]
+            public sealed partial class LangMisc
             {
                 public string SizePrefixes1000U              { get; set; } = LangFallback?._Misc.SizePrefixes1000U;
                 public string UpdateCompleteTitle            { get; set; } = LangFallback?._Misc.UpdateCompleteTitle;
@@ -18,6 +25,7 @@ namespace Hi3Helper
                 public string TimeRemainHMSFormatPlaceholder { get; set; } = LangFallback?._Misc.TimeRemainHMSFormatPlaceholder;
 
                 public string Speed                { get; set; } = LangFallback?._Misc.Speed;
+                public string SpeedTextOnly        { get; set; } = LangFallback?._Misc.SpeedTextOnly;
                 public string SpeedPerSec          { get; set; } = LangFallback?._Misc.SpeedPerSec;
                 public string SpeedPlaceholder     { get; set; } = LangFallback?._Misc.SpeedPlaceholder;
                 public string PerFromTo            { get; set; } = LangFallback?._Misc.PerFromTo;
@@ -29,6 +37,7 @@ namespace Hi3Helper
                 public string UseCurrentDir        { get; set; } = LangFallback?._Misc.UseCurrentDir;
                 public string UseDefaultDir        { get; set; } = LangFallback?._Misc.UseDefaultDir;
                 public string LocateDir            { get; set; } = LangFallback?._Misc.LocateDir;
+                public string EverythingIsOkay     { get; set; } = LangFallback?._Misc.EverythingIsOkay;
                 public string Okay                 { get; set; } = LangFallback?._Misc.Okay;
                 public string OkaySad              { get; set; } = LangFallback?._Misc.OkaySad;
                 public string OkayHappy            { get; set; } = LangFallback?._Misc.OkayHappy;
@@ -59,10 +68,14 @@ namespace Hi3Helper
                 public string LangNameCN           { get; set; } = LangFallback?._Misc.LangNameCN;
                 public string LangNameKR           { get; set; } = LangFallback?._Misc.LangNameKR;
                 public string Downloading          { get; set; } = LangFallback?._Misc.Downloading;
+                public string Updating             { get; set; } = LangFallback?._Misc.Updating;
+                public string UpdatingAndApplying  { get; set; } = LangFallback?._Misc.UpdatingAndApplying;
+                public string Applying             { get; set; } = LangFallback?._Misc.Applying;
                 public string Merging              { get; set; } = LangFallback?._Misc.Merging;
                 public string Idle                 { get; set; } = LangFallback?._Misc.Idle;
                 public string Change               { get; set; } = LangFallback?._Misc.Change;
                 public string Cancelled            { get; set; } = LangFallback?._Misc.Cancelled;
+                public string FinishingUp          { get; set; } = LangFallback?._Misc.FinishingUp;
                 public string Extracting           { get; set; } = LangFallback?._Misc.Extracting;
                 public string Converting           { get; set; } = LangFallback?._Misc.Converting;
                 public string Patching             { get; set; } = LangFallback?._Misc.Patching;
@@ -82,13 +95,18 @@ namespace Hi3Helper
                 public string BuildChannelStable   { get; set; } = LangFallback?._Misc.BuildChannelStable;
                 public string LocateExecutable     { get; set; } = LangFallback?._Misc.LocateExecutable;
                 public string OpenDownloadPage     { get; set; } = LangFallback?._Misc.OpenDownloadPage;
-                
+                public string UseAsDefault         { get; set; } = LangFallback?._Misc.UseAsDefault;
+                public string Default              { get; set; } = LangFallback?._Misc.Default;
+
                 public string CDNDescription_Github          { get; set; } = LangFallback?._Misc.CDNDescription_Github;
+                public string CDNDescription_DigitalOcean    { get; set; } = LangFallback?._Misc.CDNDescription_DigitalOcean;
                 public string CDNDescription_Cloudflare      { get; set; } = LangFallback?._Misc.CDNDescription_Cloudflare;
                 public string CDNDescription_Bitbucket       { get; set; } = LangFallback?._Misc.CDNDescription_Bitbucket;
                 public string CDNDescription_Statically      { get; set; } = LangFallback?._Misc.CDNDescription_Statically;
                 public string CDNDescription_jsDelivr        { get; set; } = LangFallback?._Misc.CDNDescription_jsDelivr;
                 public string CDNDescription_GitLab          { get; set; } = LangFallback?._Misc.CDNDescription_GitLab;
+                public string CDNDescription_Coding          { get; set; } = LangFallback?._Misc.CDNDescription_Coding;
+                public string CDNDescription_CNB             { get; set; } = LangFallback?._Misc.CDNDescription_CNB;
 
                 public string DiscordRP_Play         { get; set; } = LangFallback?._Misc.DiscordRP_Play;
                 public string DiscordRP_InGame       { get; set; } = LangFallback?._Misc.DiscordRP_InGame;
@@ -101,6 +119,8 @@ namespace Hi3Helper
                 public string DiscordRP_Default      { get; set; } = LangFallback?._Misc.DiscordRP_Default;
                 public string DiscordRP_Ad           { get; set; } = LangFallback?._Misc.DiscordRP_Ad;
                 public string DiscordRP_Region       { get; set; } = LangFallback?._Misc.DiscordRP_Region;
+
+                public string DownloadModeLabelSophon { get; set; } = LangFallback?._Misc.DownloadModeLabelSophon;
 
                 public string Taskbar_PopupHelp1  { get; set; } = LangFallback?._Misc.Taskbar_PopupHelp1;
                 public string Taskbar_PopupHelp2  { get; set; } = LangFallback?._Misc.Taskbar_PopupHelp2;
@@ -118,7 +138,30 @@ namespace Hi3Helper
                 public string IAcceptAgreement      { get; set; } = LangFallback?._Misc.IAcceptAgreement;
                 public string IDoNotAcceptAgreement { get; set; } = LangFallback?._Misc.IDoNotAcceptAgreement;
 
-                public string ImageCropperTitle { get; set; } = LangFallback?._Misc.ImageCropperTitle;
+                public string ImageCropperTitle     { get; set; } = LangFallback?._Misc.ImageCropperTitle;
+
+                public string IsBytesMoreThanBytes { get; set; } = LangFallback?._Misc.IsBytesMoreThanBytes;
+                public string IsBytesUnlimited     { get; set; } = LangFallback?._Misc.IsBytesUnlimited;
+                public string IsBytesNotANumber    { get; set; } = LangFallback?._Misc.IsBytesNotANumber;
+                public string MissingVcRedist      { get; set; } = LangFallback?._Misc.MissingVcRedist;
+                public string MissingVcRedistSubtitle { get; set; } = LangFallback?._Misc.MissingVcRedistSubtitle;
+                
+                public string ExceptionFeedbackBtn { get; set; } = LangFallback?._Misc.ExceptionFeedbackBtn;
+                public string ExceptionFeedbackBtn_Unavailable { get; set; } = LangFallback?._Misc.ExceptionFeedbackBtn_Unavailable;
+                public string ExceptionFeedbackBtn_FeedbackSent { get; set; } = LangFallback?._Misc.ExceptionFeedbackBtn_FeedbackSent;
+                public string ExceptionFeedbackTitle { get; set; } = LangFallback?._Misc.ExceptionFeedbackTitle;
+                public string ExceptionFeedbackTemplate_User { get; set; } = LangFallback?._Misc.ExceptionFeedbackTemplate_User;
+                public string ExceptionFeedbackTemplate_Email { get; set; } = LangFallback?._Misc.ExceptionFeedbackTemplate_Email;
+                public string ExceptionFeedbackTemplate_Message { get; set; } = LangFallback?._Misc.ExceptionFeedbackTemplate_Message;
+                
+                public string Feedback { get; set; } = LangFallback?._Misc.Feedback;
+                public string FeedbackSending { get; set; } = LangFallback?._Misc.FeedbackSending;
+                public string FeedbackSent { get; set; } = LangFallback?._Misc.FeedbackSent;
+                public string FeedbackSendFailure { get; set; } = LangFallback?._Misc.FeedbackSendFailure;
+                
+                public string Tag_Deprecated { get; set; } = LangFallback?._Misc.Tag_Deprecated;
+                
+                public string Generic_GameFeatureDeprecation { get; set; } = LangFallback?._Misc.Generic_GameFeatureDeprecation;
             }
         }
         #endregion

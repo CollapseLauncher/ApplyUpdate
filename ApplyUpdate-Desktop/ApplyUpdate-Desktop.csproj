@@ -9,7 +9,7 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<ApplicationIcon>..\ApplyUpdate-Core\Assets\icon.ico</ApplicationIcon>
 		<Platforms>x64</Platforms>
-		<Version>2.4.1</Version>
+		<Version>2.5.0</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
