@@ -35,13 +35,12 @@ public partial class MainWindow : Window
     {
         AutomaticDecompression = DecompressionMethods.None,
         AllowAutoRedirect = true,
-        EnableMultipleHttp3Connections = true,
         EnableMultipleHttp2Connections = true,
         MaxConnectionsPerServer = 256
     };
     public static HttpClient GlobalHttpClient = new HttpClient(GlobalSocketHttpHandler, false)
     {
-        DefaultRequestVersion = HttpVersion.Version30,
+        DefaultRequestVersion = HttpVersion.Version20,
         DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
     };
 
@@ -278,7 +277,7 @@ public partial class MainWindow : Window
 
             UpdateVersionOld.Text = oldVersion.HasValue ? oldVersion.Value.VersionString : Lang._UpdatePage.ApplyUpdateMiscNone;
             UpdateVersionNew.Text = newVersion.VersionString;
-            ChannelName.Text = char.ToUpper(Stamp[0]) + Stamp.Substring(1);
+            ChannelName.Text = char.ToUpper(Stamp[0]) + Stamp[1..];
 
             if (!await CleanupOldFiles()) Environment.Exit(int.MinValue);
 
@@ -427,7 +426,7 @@ public partial class MainWindow : Window
     private static string GetPathWithoutDriveLetter(string path)
     {
         int firstIndexOf = path.IndexOf('\\');
-        return firstIndexOf > -1 ? path.Substring(firstIndexOf + 1) : path;
+        return firstIndexOf > -1 ? path[(firstIndexOf + 1)..] : path;
     }
 
     private static void RegisterDirOrFilesRecord(InnoUninstLog innoLog, string pathToRegister)
@@ -557,7 +556,7 @@ public partial class MainWindow : Window
     {
         CDNURLProperty preferredUrl = FallbackCDNUtil.GetPreferredCDN();
         string stampUrl = FallbackCDNUtil.CombineURLFromString(preferredUrl.URLPrefix, stamp, "fileindex.json");
-        await using Stream stream = await HttpResponseInputStream.CreateStreamAsync(GlobalHttpClient, stampUrl, 0, null, null, null, null, default);
+        await using Stream stream = await HttpResponseInputStream.CreateStreamAsync(GlobalHttpClient, stampUrl, 0, null, null, null, null, CancellationToken.None);
         AppUpdateVersionProp updateInfo = await JsonSerializer.DeserializeAsync(stream, JSONContext.Default.AppUpdateVersionProp)!;
         return updateInfo;
     }

@@ -3,13 +3,19 @@ using Hi3Helper.Http;
 using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.LibraryImport;
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
-
+using System.Threading.Tasks.Dataflow;
+using Hi3Helper.Win32.ManagedTools;
 using static Hi3Helper.Locale;
 using static Hi3Helper.Logger;
 
@@ -19,7 +25,6 @@ namespace ApplyUpdate
     {
         internal enum PathAction { create, delete }
         internal enum PathType { file, directory }
-        enum StringAlign { left, center, right }
 
         public static string[] SizeSuffixes = [];
 
@@ -30,12 +35,12 @@ namespace ApplyUpdate
         public static string realExecPath = Process.GetCurrentProcess().MainModule!.FileName;
         public static string realExecDir { get => Path.GetDirectoryName(realExecPath)!; }
         public static string workingDir { get => realExecDir; }
-        public static string execPath = Path.Combine(workingDir, applyExec + ".exe");
         public static string tempDir = Path.Combine(workingDir, "_Temp");
-        public static string sourcePath = Path.Combine(workingDir, Path.GetFileName(execPath));
         public static string applyExec = Path.GetFileNameWithoutExtension(realExecPath);
+        public static string execPath = Path.Combine(workingDir, applyExec + ".exe");
+        public static string sourcePath = Path.Combine(workingDir, Path.GetFileName(execPath) ?? "");
         public static string launcherPath = Path.Combine(workingDir, "current", "CollapseLauncher.exe");
-        public static string launcherAppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow\CollapseLauncher");
+        public static string launcherAppDataPath = Path.Combine(PathUtil.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow\CollapseLauncher");
 
         public static string zipPath = Path.Combine(tempDir, "latest");
         public static string zipExtractPath = Path.Combine(tempDir, "_Extract");
@@ -235,9 +240,9 @@ namespace ApplyUpdate
                 {
                     try
                     {
-                        _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, path.Substring(offset));
+                        _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, path[offset..]);
                         InvokeStatus();
-                        Console.Write('\r' + GetBothAlignedString($"Deleting folder: {path.Substring(offset)}...", $"[{i++} / ?]"));
+                        Console.Write('\r' + GetBothAlignedString($"Deleting folder: {path[offset..]}...", $"[{i++} / ?]"));
                         TryDoPathAction(path, PathAction.delete, PathType.directory);
                     }
                     catch (Exception ex)
@@ -254,9 +259,9 @@ namespace ApplyUpdate
                 {
                     try
                     {
-                        _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, path.Substring(offset));
+                        _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, path[offset..]);
                         InvokeStatus();
-                        Console.Write('\r' + GetBothAlignedString($"Deleting file: {path.Substring(offset)}...", $"[{i++} / ?]"));
+                        Console.Write('\r' + GetBothAlignedString($"Deleting file: {path[offset..]}...", $"[{i++} / ?]"));
                         TryDoPathAction(path, PathAction.delete, PathType.file);
                     }
                     catch (Exception ex)
@@ -272,9 +277,9 @@ namespace ApplyUpdate
             {
                 try
                 {
-                    _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, applyUpdateConfig.Substring(offset));
+                    _propStatus.ActivityStatus = string.Format(Lang._UpdatePage.ApplyUpdateTaskLegacyDeleting, applyUpdateConfig[offset..]);
                     InvokeStatus();
-                    Console.Write('\r' + GetBothAlignedString($"Deleting file: {applyUpdateConfig.Substring(offset)}...", $"[{i++} / ?]"));
+                    Console.Write('\r' + GetBothAlignedString($"Deleting file: {applyUpdateConfig[offset..]}...", $"[{i++} / ?]"));
                     TryDoPathAction(applyUpdateConfig, PathAction.delete, PathType.file);
                 }
                 catch (Exception ex)
@@ -309,27 +314,183 @@ namespace ApplyUpdate
                     _propProgress.Speed = speed;
 
                     _propStatus.IsProgressIndetermined = false;
-                    _propStatus.ActivitySubStatus = string.Format("{0} / {1}", SummarizeSizeSimple(progress.SizeDownloaded), SummarizeSizeSimple(progress.SizeToBeDownloaded));
+                    _propStatus.ActivitySubStatus =
+                        $"{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}";
                     InvokeProgress();
                     InvokeStatus();
 
                     string print = GetBothAlignedString($"Downloading package: {Math.Round(progress.ProgressPercentage, 2)}% [{SummarizeSizeSimple(progress.Speed)}/s]...", $"[{SummarizeSizeSimple(progress.SizeDownloaded)} / {SummarizeSizeSimple(progress.SizeToBeDownloaded)}]");
                     Console.Write($"\r{print}");
                 };
-                await FallbackCDNUtil.DownloadCDNFallbackContent(downloadClient, zipPath, (byte)(Environment.ProcessorCount >= 4 ? 4 : Environment.ProcessorCount), packageURL, default);
+                await FallbackCDNUtil.DownloadCDNFallbackContent(downloadClient, zipPath, (byte)(Environment.ProcessorCount >= 4 ? 4 : Environment.ProcessorCount), packageURL, CancellationToken.None);
                 Console.WriteLine();
             }
         }
 
-        internal static async Task ExtractPackage(string packageFile, string outputFolder)
+        public static async Task ExtractPackage(string packageFile, string outputFolder)
         {
-            using (FileStream fs = new FileStream(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 0, FileOptions.DeleteOnClose))
-            using (BrotliStream bs = new BrotliStream(fs, CompressionMode.Decompress))
+            await using FileStream fs = new(packageFile, FileMode.Open, FileAccess.Read, FileShare.None, 0);
+            if (IsUseV2Package(fs))
+            {
+                await ExtractPackageV2(fs, outputFolder);
+                return;
+            }
+
+            await ExtractPackageLegacy(fs, outputFolder);
+        }
+
+        internal const uint PkZipHeader = 0x04034B50; // (Little-Endian) PK\u0003\u0004
+
+        internal static bool IsUseV2Package(FileStream stream)
+        {
+            scoped Span<byte> header = stackalloc byte[4];
+            stream.ReadExactly(header);
+
+            return MemoryMarshal.Read<uint>(header) == PkZipHeader;
+        }
+
+        private const int CopyToBufferSize = 512 << 10;
+
+        internal static Task ExtractPackageV2(FileStream fileStream, string outputFolder)
+        {
+            fileStream.Position = 0;
+
+            ZipArchive archive = new(fileStream, ZipArchiveMode.Read, false);
+            ReadOnlyCollection<ZipArchiveEntry> entries = archive.Entries;
+            int count = entries.Count;
+            int remained = count;
+            int index = 0;
+
+            Channel<(Stream Stream, DateTimeOffset WriteTime, string Name)> streamChannel =
+                Channel.CreateBounded<(Stream, DateTimeOffset, string)>(
+                new BoundedChannelOptions(Environment.ProcessorCount)
+                {
+                    FullMode = BoundedChannelFullMode.Wait
+                });
+
+            TaskCompletionSource tcs = new();
+            _ = CopyToStreamWriter();
+            _ = InvokeConsumer();
+
+            return tcs.Task;
+
+            async Task InvokeConsumer()
+            {
+                try
+                {
+                    while (await streamChannel.Reader.WaitToReadAsync())
+                    {
+                        (Stream Stream, DateTimeOffset WriteTime, string Name) entry =
+                            await streamChannel.Reader.ReadAsync();
+                        _ = ImplRead(entry.Stream, entry.WriteTime, entry.Name);
+                    }
+
+                    tcs.SetResult();
+                }
+                catch (Exception e)
+                {
+                    tcs.SetException(e);
+                }
+            }
+
+            async Task ImplRead(Stream stream, DateTimeOffset dateTimeWrite, string entryName)
+            {
+                try
+                {
+                    Interlocked.Increment(ref index);
+
+                    _propStatus.ActivityStatus = $"{entryName}";
+                    _propStatus.ActivitySubStatus = $"{index} / {count}";
+                    _propStatus.IsProgressIndetermined = true;
+                    InvokeStatus();
+                    Console.Write('\r' + GetBothAlignedString($"Extracting: {entryName}...", $"[{index} / {count}]"));
+
+                    stream.Position = 0;
+                    await using Stream decodedStream = GetPostDecompStream(entryName, stream, out entryName);
+
+                    string pathTo = Path.Combine(outputFolder, entryName);
+                    string pathDir = Path.GetDirectoryName(pathTo)!;
+                    TryDoPathAction(pathDir, PathAction.create, PathType.directory);
+
+                    await using (FileStream destination = File.Create(pathTo))
+                    {
+                        await decodedStream.CopyToAsync(destination, CopyToBufferSize);
+                    }
+
+                    File.SetLastWriteTime(pathTo, dateTimeWrite.DateTime);
+
+                    Interlocked.Decrement(ref remained);
+                    if (remained <= 0)
+                    {
+                        streamChannel.Writer.Complete();
+                    }
+                }
+                catch (Exception e)
+                {
+                    tcs.SetException(e);
+                }
+                finally
+                {
+                    await stream.DisposeAsync();
+                }
+            }
+
+            async Task CopyToStreamWriter()
+            {
+                try
+                {
+                    foreach (ZipArchiveEntry entry in entries)
+                    {
+                        MemoryStream stream = new();
+                        DateTimeOffset lastWriteTime = entry.LastWriteTime;
+                        string name = entry.FullName;
+
+                        await using Stream entryStream = entry.Open();
+                        await entryStream.CopyToAsync(stream, CopyToBufferSize);
+
+                        await streamChannel.Writer.WriteAsync((stream, lastWriteTime, name));
+                    }
+                }
+                catch (Exception e)
+                {
+                    tcs.SetException(e);
+                }
+            }
+
+            static Stream GetPostDecompStream(string name, Stream memStream, out string entryName)
+            {
+                const string BrotliExt = ".br";
+                const string ZstdExt = ".zstd";
+
+                bool isUseBrotli = name.EndsWith(BrotliExt, StringComparison.OrdinalIgnoreCase);
+                bool isUseZstd   = name.EndsWith(ZstdExt,   StringComparison.OrdinalIgnoreCase);
+
+                if (isUseBrotli)
+                {
+                    entryName = name[..^BrotliExt.Length];
+                    return new BrotliStream(memStream, CompressionMode.Decompress);
+                }
+
+                if (isUseZstd)
+                {
+                    entryName = name[..^ZstdExt.Length];
+                    return new ZstdNet.DecompressionStream(memStream);
+                }
+
+                entryName = name;
+                return memStream;
+            }
+        }
+
+        internal static async Task ExtractPackageLegacy(FileStream fileStream, string outputFolder)
+        {
+            fileStream.Position = 0;
+            await using (BrotliStream bs = new BrotliStream(fileStream, CompressionMode.Decompress))
             {
                 int i = 1;
-                using (TarReader reader = new TarReader(bs, true))
+                await using (TarReader reader = new TarReader(bs, true))
                 {
-                    while (reader.GetNextEntry() is TarEntry entry)
+                    while (await reader.GetNextEntryAsync() is { } entry)
                     {
                         _propStatus.ActivityStatus = $"{entry.Name}";
                         _propStatus.ActivitySubStatus = $"{i} / ?";
@@ -351,7 +512,7 @@ namespace ApplyUpdate
             int i = 1;
             foreach (string sourceFile in files)
             {
-                string baseName = sourceFile.AsSpan().Slice(offset).ToString();
+                string baseName = sourceFile.AsSpan()[offset..].ToString();
                 string destPath = Path.Combine(destination, baseName);
                 string destDir = Path.GetDirectoryName(destPath)!;
 
@@ -391,7 +552,7 @@ namespace ApplyUpdate
         {
             byte mag = (byte)Math.Log(value, 1000);
 
-            return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
+            return $"{Math.Round(value / (1L << (mag * 10)), decimalPlaces)} {SizeSuffixes[mag]}";
         }
 
         private static async Task CreateFileFromStream(string outputDir, TarEntry entry)
@@ -413,7 +574,7 @@ namespace ApplyUpdate
         {
             bool isFile = type == PathType.file;
 
-            if (isFile && action == PathAction.create) throw new ArgumentException("File type doesn't support create action!", "action");
+            if (isFile && action == PathAction.create) throw new ArgumentException("File type doesn't support create action!", nameof(action));
 
             try
             {
@@ -431,6 +592,8 @@ namespace ApplyUpdate
                     case PathAction.delete:
                         TryDeleteDirectory(path);
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(action), action, null);
                 }
             }
             catch (Exception ex)

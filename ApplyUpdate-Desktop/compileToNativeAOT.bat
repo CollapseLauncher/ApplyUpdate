@@ -20,6 +20,8 @@ dotnet publish /p:PublishProfile=NativeAOT_win-x64
 if not %errorlevel% == 0 goto :ErrorMsg
 
 :: Remove all unused .dll libraries since it's already linked to the executable
+rmdir /S /Q build\Lib
+if not %errorlevel% == 0 goto :ErrorMsg
 del build\*.dll
 if not %errorlevel% == 0 goto :ErrorMsg
 :: Remove all debug (.pdb) files

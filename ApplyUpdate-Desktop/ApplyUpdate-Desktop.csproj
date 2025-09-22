@@ -1,40 +1,48 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<OutputType>Exe</OutputType>
-		<!--If you are willing to use Windows/MacOS native APIs you will need to create 3 projects.
-			One for Windows with net7.0-windows TFM, one for MacOS with net7.0-macos and one with net7.0 TFM for Linux.-->
-		<TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<ApplicationIcon>..\ApplyUpdate-Core\Assets\icon.ico</ApplicationIcon>
-		<Platforms>x64</Platforms>
-		<Version>2.5.0</Version>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <!--If you are willing to use Windows/MacOS native APIs you will need to create 3 projects.
+            One for Windows with net7.0-windows TFM, one for MacOS with net7.0-macos and one with net7.0 TFM for Linux.-->
+        <TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>..\ApplyUpdate-Core\Assets\icon.ico</ApplicationIcon>
+        <Platforms>x64</Platforms>
+        <Version>2.5.1</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
+    </PropertyGroup>
 
-	<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
-		<DirectPInvoke Include="libHarfBuzzSharp" />
-		<NativeLibrary Include="nativeLib\libHarfBuzzSharp.lib" />
-		<DirectPInvoke Include="libSkiaSharp" />
-		<NativeLibrary Include="nativeLib\libSkiaSharp.lib" />
+    <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+        <!-- Use additional linker arguments -->
+        <LinkerArg Include="/DEBUG:NONE" Condition="'$(Configuration)'!='Debug'" />
+        <LinkerArg Include="/LTCG" />
+
+        <DirectPInvoke Include="libHarfBuzzSharp" />
+        <NativeLibrary Include="nativeLib\libHarfBuzzSharp.lib" />
+        <DirectPInvoke Include="libSkiaSharp" />
+        <NativeLibrary Include="nativeLib\skia.lib" />
+        <NativeLibrary Include="nativeLib\SkiaSharp.lib" />
+
         <DirectPInvoke Include="nativeLib/rcedit" />
         <NativeLibrary Include="nativeLib\rcedit.lib" />
-	</ItemGroup>
+        <DirectPInvoke Include="libzstd" />
+        <NativeLibrary Include="nativeLib\libzstd_static.lib" />
+    </ItemGroup>
 
-	<ItemGroup>
-	  <PackageReference Include="Avalonia.Skia" Version="11.0.11" />
-	  <PackageReference Include="Avalonia.Win32" Version="11.0.11" />
-	  <PackageReference Include="System.IO.Hashing" Version="9.0.0" />
-	</ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Avalonia.Skia" Version="11.0.11" />
+      <PackageReference Include="Avalonia.Win32" Version="11.0.11" />
+      <PackageReference Include="System.IO.Hashing" Version="9.0.9" />
+    </ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\ApplyUpdate-Core\ApplyUpdate-Core.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\ApplyUpdate-Core\ApplyUpdate-Core.csproj" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(PublishAot)' != 'true'">
-	  <None Update="nativeLib\rcedit.dll">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	</ItemGroup>
+      <None Update="nativeLib\rcedit.dll">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>

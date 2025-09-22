@@ -58,13 +58,6 @@ namespace ApplyUpdate
 
             new()
             {
-                Name = "Coding" + $" [{Locale.Lang._Misc.Tag_Deprecated}]",
-                URLPrefix = "https://ohly-generic.pkg.coding.net/collapse/release/",
-            },
-
-
-            new()
-            {
                 Name = "CNB",
                 URLPrefix = "https://cnb.cool/CollapseLauncher/ReleaseRepo/-/git/raw/main/",
             }

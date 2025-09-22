@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:ApplyUpdate"
         mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="290"
 		CanResize="False" Width="500" Height="290"
 		WindowStartupLocation="CenterScreen"
@@ -10,8 +9,13 @@
         Icon="/Assets/icon.ico"
 		ExtendClientAreaToDecorationsHint="True"
 		ExtendClientAreaChromeHints="PreferSystemChrome"
+		Background="{StaticResource WindowBackground}"
         Title="Collapse Launcher ApplyUpdate">
-	<Grid Margin="24" x:Name="RootGrid">
+	<Window.Resources>
+        <SolidColorBrush x:Key="WindowBackground"
+                         Color="#C0FFFFFF"/>
+    </Window.Resources>
+    <Grid Margin="24" x:Name="RootGrid">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="90"/>
 			<RowDefinition/>

@@ -4,12 +4,21 @@ using Hi3Helper;
 using Hi3Helper.Win32.Native.LibraryImport;
 #endif
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-
+using System.Threading;
+using System.Threading.Tasks;
 using static Hi3Helper.Logger;
+
+using ZstdCompressionStream = ZstdNet.CompressionStream;
+using ZstdCompressionOptions = ZstdNet.CompressionOptions;
+using ZstdNet;
+using System.Collections.ObjectModel;
 
 namespace ApplyUpdate;
 
@@ -21,6 +30,8 @@ public static partial class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        ZstdNet.DllUtils.IsIgnoreMissingLibrary = true;
+
         // PInvoke.AllocateConsole();
         CurrentLogger = new LoggerConsole("", Encoding.Unicode);
         Console.OutputEncoding = Encoding.Unicode;
@@ -122,14 +133,14 @@ public static partial class Program
 
             using (FileStream fileStream = new FileStream(execNewPath, FileMode.Create, FileAccess.Write))
             {
-                LogWriteLine($"Writing executable data...");
+                LogWriteLine("Writing executable data...");
                 fileStream.Write(newFileBytes);
-                LogWriteLine($"Writing Velopack Package data...");
+                LogWriteLine("Writing Velopack Package data...");
                 fileStream.Write(zipPkgBuffer);
             }
 
             File.Move(execNewPath, execPath, true);
-            LogWriteLine($"Done!");
+            LogWriteLine("Done!");
         }
         finally
         {
@@ -141,47 +152,96 @@ public static partial class Program
     {
         if (args.Length != 3)
         {
-            LogWriteLine("Please define Input and Output file path!", LogType.Error);
+            LogWriteLine("Please define Input directory and Output file path!", LogType.Error);
             return 1;
         }
 
-        if (!File.Exists(args[1]))
+        FileInfo packageTarget = new FileInfo(args[2]);
+        DirectoryInfo sourceDirectory = new DirectoryInfo(args[1]);
+        DirectoryInfo? targetDirectory = packageTarget.Directory;
+        if (!sourceDirectory.Exists)
         {
-            LogWriteLine("Input file doesn't exist!", LogType.Error);
+            LogWriteLine("Input directory doesn't exist!", LogType.Error);
             LogWriteLine("Path: " + args[1], LogType.Error);
             return 2;
         }
 
-        if (!Directory.Exists(Path.GetDirectoryName(args[2])))
-        {
-            LogWriteLine("Output directory from given path doesn't exist!", LogType.Error);
-            LogWriteLine("Path: " + args[2], LogType.Error);
-            return 2;
-        }
+        targetDirectory?.Create();
 
-        using (FileStream fsi = new FileStream(args[1], FileMode.Open, FileAccess.Read))
-        using (FileStream fso = new FileStream(args[2], FileMode.Create, FileAccess.Write))
-        using (BrotliStream bso = new BrotliStream(fso, CompressionMode.Compress, true))
-        {
-            LogWriteLine("Input path: " + args[1]);
-            LogWriteLine("Output path: " + args[2]);
-            byte[] buffer = new byte[4 << 14];
-            LogWriteLine("Input filesize: " + fsi.Length + " bytes");
+        using FileStream zipArchiveStream = packageTarget.Create();
+        using ZipArchive zipArchive = new(zipArchiveStream, ZipArchiveMode.Create, false);
 
-            int read = 0;
-            long curRead = 0;
-            long length = fsi.Length;
-            while ((read = fsi.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                curRead += read;
-                Console.Write($"\rCompressing: {Math.Round(((double)curRead / length) * 100, 4)}%...");
-                bso.Write(buffer, 0, read);
-            }
-            Console.WriteLine(" Completed!");
-            LogWriteLine("Output filesize: " + fso.Length + " bytes", LogType.Error);
-            LogWriteLine($"Compression ratio: {Math.Round((double)fso.Length / fsi.Length * 100, 4)}%", LogType.Error);
-        }
+        FileInfo[] fileInfos = sourceDirectory.GetFiles("*", SearchOption.AllDirectories);
+
+        int index = 1;
+        int fileCount = fileInfos.Length;
+
+        long fileSizeProcessed = 0;
+        long fileTotalSize = fileInfos.Sum(x => x.Length);
+
+        string baseDir = sourceDirectory.FullName;
+        Lock thisLock = new();
+
+        LogWriteLine("Input path: " + args[1]);
+        LogWriteLine("Output path: " + args[2]);
+        LogWriteLine("Input file size: " + fileTotalSize + " bytes");
+
+        Parallel.ForEach(fileInfos, ImplWriteTo);
+
+        Console.WriteLine(" Completed!");
+        LogWriteLine("Output file size: " + zipArchiveStream.Length + " bytes");
+        LogWriteLine($"Compression ratio: {Math.Round((double)zipArchiveStream.Length / fileTotalSize * 100, 4)}%");
 
         return 0;
+
+        void ImplWriteTo(FileInfo fileInfo)
+        {
+            const int bufferSize = 512 << 10;
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            Span<byte> bufferSpan = buffer;
+
+            string fullName = fileInfo.FullName;
+            string relativeName = fullName.AsSpan(baseDir.Length).TrimStart("/\\").ToString() + ".zstd";
+
+            try
+            {
+                DateTime lastWriteTime = fileInfo.LastWriteTime;
+
+                if (lastWriteTime.Year is < 1980 or > 2107)
+                    lastWriteTime = new DateTime(1980, 1, 1, 0, 0, 0);
+
+                using MemoryStream memoryStream = new();
+                ZstdCompressionStream compressStream = new(memoryStream, new ZstdCompressionOptions(22));
+                using FileStream fileStream = fileInfo.OpenRead();
+
+                int read;
+                while ((read = fileStream.Read(bufferSpan)) > 0)
+                {
+                    compressStream.Write(bufferSpan[..read]);
+                    Interlocked.Add(ref fileSizeProcessed, read);
+
+                    Console.Write($"\rCompressing: [{index} / {fileCount}] {Math.Round((double)fileSizeProcessed / fileTotalSize * 100, 4)}%...");
+                }
+
+                compressStream.Dispose();
+                memoryStream.Flush();
+                memoryStream.Position = 0;
+
+                using (thisLock.EnterScope())
+                {
+                    ZipArchiveEntry entry = zipArchive.CreateEntry(relativeName, CompressionLevel.NoCompression);
+                    entry.LastWriteTime = lastWriteTime;
+
+                    using Stream entryStream = entry.Open();
+                    memoryStream.CopyTo(entryStream);
+                    index++;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
     }
 }
