@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
+		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
 		<Nullable>disable</Nullable>
 		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -13,23 +13,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="Hi3Helper.Http\Test\**" />
-		<EmbeddedResource Remove="Hi3Helper.Http\Test\**" />
-		<None Remove="Hi3Helper.Http\Test\**" />
+		<Compile Remove="Hi3Helper.Http\**" />
+		<EmbeddedResource Remove="Hi3Helper.Http\**" />
+		<None Remove="Hi3Helper.Http\**" />
 		<None Remove="publish\**" />
-		<Page Remove="Hi3Helper.Http\Test\**" />
+		<Page Remove="Hi3Helper.Http\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Avalonia" Version="11.0.11" />
-		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.11" />
+		<PackageReference Include="Avalonia" Version="11.3.14" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.11" />
+		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.14" />
 		<PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.5" />
-		<PackageReference Include="System.IO.Hashing" Version="9.0.9" />
+		<PackageReference Include="System.IO.Hashing" Version="10.0.7" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Hi3Helper.Win32\Hi3Helper.Win32.csproj" />
+	  <ProjectReference Include="Hi3Helper.Http\Hi3Helper.Http.csproj" />
 	</ItemGroup>
 </Project>

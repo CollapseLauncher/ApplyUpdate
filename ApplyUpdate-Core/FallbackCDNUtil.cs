@@ -176,7 +176,7 @@ namespace ApplyUpdate
                 if (!urlStatus.Item1) return false;
 
                 // Continue to get the content and return true if successful
-                await httpInstance.Download(urlStatus.Item2, outputStream, null, null, token);
+                await httpInstance.Download(urlStatus.Item2, outputStream, null, null, threadToken: token);
                 return true;
             }
             // Handle the error and log it. If fails, then log it and return false

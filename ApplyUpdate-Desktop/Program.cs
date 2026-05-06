@@ -5,7 +5,6 @@ using Hi3Helper.Win32.Native.LibraryImport;
 #endif
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -17,8 +16,8 @@ using static Hi3Helper.Logger;
 
 using ZstdCompressionStream = ZstdNet.CompressionStream;
 using ZstdCompressionOptions = ZstdNet.CompressionOptions;
-using ZstdNet;
-using System.Collections.ObjectModel;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace ApplyUpdate;
 
@@ -46,7 +45,16 @@ public static partial class Program
             return;
         }
 
-        if (args.Length != 0 && args[0].ToLower() == "compress")
+        if (args.Length != 0 && args[0].Equals("fileindex", StringComparison.OrdinalIgnoreCase))
+        {
+#if !DEBUG
+            PInvoke.AllocConsole();
+#endif
+            if (GenerateFileIndex(args[1..]) > 0) Console.ReadLine();
+            return;
+        }
+
+        if (args.Length != 0 && args[0].Equals("compress", StringComparison.OrdinalIgnoreCase))
         {
 #if !DEBUG
             PInvoke.AllocConsole();
@@ -146,6 +154,76 @@ public static partial class Program
         {
             File.Delete(execTempPath);
         }
+    }
+
+    private static int GenerateFileIndex(params string[] args)
+    {
+        if (args.Length != 3)
+        {
+            LogWriteLine("Argument is invalid. Use: [path_to_dir] [version] [true/false (for force update)]", LogType.Error);
+            return 1;
+        }
+
+        string dir = args[0];
+        if (!Version.TryParse(args[1], out Version? version))
+        {
+            LogWriteLine("Version string cannot be parsed due to invalid format. Please use x.x.x or x.x format.", LogType.Error);
+            return 2;
+        }
+
+        if (!bool.TryParse(args[2], out bool isForceUpdate))
+        {
+            LogWriteLine("Force update option cannot be parsed. Please use either true or false.", LogType.Error);
+            return 2;
+        }
+
+        if (!Directory.Exists(dir))
+        {
+            LogWriteLine($"Directory: {dir} does not exist!", LogType.Error);
+            return 3;
+        }
+
+        FileIndex fileIndex = new FileIndex
+        {
+            IsForceUpdate = isForceUpdate,
+            Version = version.ToString(),
+            UnixTimeUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+
+        LogWriteLine($"Writing fileindex.json to: {dir}");
+
+        DirectoryInfo dirInfo = new DirectoryInfo(dir);
+        foreach (FileInfo fileInfo in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+        {
+            string relativePath = fileInfo.FullName.AsSpan()[dirInfo.FullName.Length..].Trim("/\\").ToString();
+            long fileSize = fileInfo.Length;
+
+            if (relativePath.EndsWith("fileindex.json"))
+            {
+                continue;
+            }
+
+            LogWriteLine($"  -- Calculating hash for file: {relativePath}");
+
+            using FileStream fileStream = fileInfo.OpenRead();
+            byte[] md5Hash = MD5.HashData(fileStream);
+            string md5HashStr = Convert.ToHexStringLower(md5Hash);
+
+            FileIndexEntry entry = new()
+            {
+                FilePath = relativePath,
+                FileSize = fileSize,
+                Md5Hash  = md5HashStr
+            };
+            fileIndex.FileEntries.Add(entry);
+        }
+
+        using FileStream fileIndexStream = File.Create(Path.Combine(dir, "fileindex.json"));
+        JsonSerializer.Serialize(fileIndexStream, fileIndex, FileIndexJsonContext.Default.FileIndex);
+
+        LogWriteLine($"Completed!");
+
+        return 0;
     }
 
     private static int CompressMode(params string[] args)

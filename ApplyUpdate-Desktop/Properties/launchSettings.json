@@ -1,7 +1,8 @@
 {
   "profiles": {
     "ApplyUpdate-Desktop": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "fileindex \"G:\\myGit\\CollapseLauncher-ReleaseRepo\\preview\" 1.84.2 true"
     }
   }
 }

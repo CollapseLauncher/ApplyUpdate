@@ -8,7 +8,6 @@
         x:Class="ApplyUpdate.MainWindow"
         Icon="/Assets/icon.ico"
 		ExtendClientAreaToDecorationsHint="True"
-		ExtendClientAreaChromeHints="PreferSystemChrome"
 		Background="{StaticResource WindowBackground}"
         Title="Collapse Launcher ApplyUpdate">
 	<Window.Resources>
